@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.4</title>
+    <title>中国語 SRS学習 v1.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -154,7 +154,7 @@
             { id: 124, text: "乘", meaning: "～に乗じて" },
             { id: 125, text: "顺", meaning: "～に沿って" },
             { id: 126, text: "沿", meaning: "～に沿って" },
-            { id: 127, text: "順着", meaning: "～に沿って、順を追って" },
+            { id: 127, text: "顺着", meaning: "～に沿って、順を追って" },
             { id: 128, text: "沿着", meaning: "～に沿って" },
             { id: 129, text: "朝着", meaning: "～に向かって" },
             { id: 130, text: "向着", meaning: "～に向かって" },
@@ -178,7 +178,7 @@
             { id: 148, text: "说来说去", meaning: "あれこれ言ったところで" },
             { id: 149, text: "其实", meaning: "実は" },
             { id: 150, text: "实际上", meaning: "実際には" },
-            { id: 151, text: "事实上", meaning: "事実上" },
+            { id: 151, text: "事实上", meaning: "事实上" },
             { id: 152, text: "本来", meaning: "もともと" },
             { id: 153, text: "原来", meaning: "元来、なんと～だったのか" },
             { id: 154, text: "与其说...不如说...", meaning: "～と言うよりはむしろ～だ" },
@@ -253,7 +253,7 @@
             { id: 223, text: "可想而知", meaning: "推して知るべし" },
             { id: 224, text: "由此可见", meaning: "これから見ると" },
             { id: 225, text: "显而易见", meaning: "明らかである" },
-            { id: 226, text: "毫无疑問", meaning: "疑いなく" },
+            { id: 226, text: "毫无疑问", meaning: "疑いなく" },
             { id: 227, text: "不言而喻", meaning: "言うまでもない" },
             { id: 228, text: "众所周知", meaning: "周知の通り" },
             { id: 229, text: "总的来看", meaning: "全体的に見ると" },
@@ -333,7 +333,6 @@
         // --- メインアプリ ---
         function App() {
             const [appState, setAppState] = useState('setup');
-            const [prevAppState, setPrevAppState] = useState('setup'); // 待機復帰用
             const [theme, setTheme] = useState('');
             const [learningData, setLearningData] = useState([]);
             const [feedbackHistory, setFeedbackHistory] = useState([]);
@@ -352,7 +351,7 @@
             }, []);
 
             useEffect(() => {
-                addLog("システム: アプリケーション起動 v1.4");
+                addLog("システム: アプリケーション起動 v1.5");
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
             }, [addLog]);
@@ -388,7 +387,7 @@
                             if (i === models.length - 1) {
                                 throw new Error("全モデルのレートリミットに達しました。しばらく時間をおいてください。");
                             }
-                            continue; // 次のモデルへ
+                            continue; // 次のモデルへ（リトライなし）
                         }
 
                         if (!response.ok) {
@@ -407,7 +406,6 @@
                             throw e;
                         }
                         addLog(`[注意]: モデル ${modelId} でエラーが発生しました。次のモデルを試します。 (${e.message})`);
-                        // continue;
                     }
                 }
             };
@@ -423,7 +421,6 @@
                         setLearningData(data);
                         setAppState('theme_input');
                         addLog(`システム: 学習データ ${file.name} を読み込みました。`);
-                        setShowSettings(false);
                     } catch (err) { addLog("エラー: ファイル解析失敗"); }
                 };
                 reader.readAsText(file);
@@ -492,7 +489,6 @@
             const startLesson = async () => {
                 if (!apiKey) { addLog("システム: APIキーが未設定です。"); setShowSettings(true); return; }
                 const task = selectNextTask();
-                const originalState = appState;
                 setAppState('loading');
                 
                 const prompt = `テーマ「${theme}」と中国語文法「${task.item.text}(意味:${task.item.meaning})」を使用して、以下のJSONを生成してください。
@@ -511,11 +507,10 @@
             };
 
             const submitAnswer = async () => {
-                const originalState = appState;
                 setAppState('loading');
                 addLog("システム: AIによる添削を実行中...");
                 const target = currentTask.pattern === 'zh-jp' ? currentTask.aiData.japanese : currentTask.aiData.chinese;
-                const prompt = `問題: ${currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}
+                const prompt = `问题: ${currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}
                 正解の目安: ${target}
                 ユーザーの回答: ${userAnswer}
                 上記を添削しJSONで返してください。意味が通じていればisCorrectをtrueに。
@@ -532,6 +527,7 @@
                 }
             };
 
+            // 理解度を入力してローカルデータを更新後、「次へ」か「終了」を待機する状態にする
             const finishLesson = (lvl) => {
                 addLog(`システム: 理解度 ${lvl} でデータを更新...`);
                 
@@ -570,9 +566,9 @@
                 });
                 setLearningData(nextData);
                 localStorage.setItem('srs_local_save', JSON.stringify(nextData));
-                addLog("システム: 学習結果を内部ストレージに更新しました。次の問題へ移行します。");
+                addLog("システム: 学習結果を自動保存しました。アクション待機中...");
 
-                startLesson();
+                setAppState('result_action');
             };
 
             const triggerSaveLearningData = async () => {
@@ -596,8 +592,8 @@
 
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
-                    <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-50">
-                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.4</span></div>
+                    <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
+                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.5</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 active:scale-90 transition-all">
                             <Icon name="Settings" />
                         </button>
@@ -640,7 +636,7 @@
                         {appState === 'loading' && (
                             <div className="flex flex-col items-center justify-center py-24 animate-pulse">
                                 <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-6 shadow-sm"></div>
-                                <p className="text-slate-500 font-bold text-sm">AIが最適な例文を作成中...</p>
+                                <p className="text-slate-500 font-bold text-sm">AIが処理中...</p>
                                 <p className="text-slate-300 text-[10px] mt-2 font-mono">Rate Limit発生時は自動的に別モデルを試行します</p>
                             </div>
                         )}
@@ -663,7 +659,7 @@
                             </div>
                         )}
 
-                        {appState === 'result' && (
+                        {(appState === 'result' || appState === 'result_action') && (
                             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in space-y-6">
                                 <div className="text-center py-4">
                                     <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${evaluation.isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
@@ -694,20 +690,58 @@
                                     </div>
                                 </div>
                                 <div className="pt-6 border-t border-slate-100">
-                                    <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">自己評価を入力して次へ</p>
-                                    <div className="flex gap-2">
-                                        {[1,2,3,4,5].map(l => (
-                                            <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-5 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-slate-700 active:scale-90 transition-all shadow-sm">
-                                                {l}
-                                            </button>
-                                        ))}
+                                    {appState === 'result' ? (
+                                        <>
+                                            <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">自己評価を入力して次へ</p>
+                                            <div className="flex gap-2">
+                                                {[1,2,3,4,5].map(l => (
+                                                    <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-5 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-slate-700 active:scale-90 transition-all shadow-sm">
+                                                        {l}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">次のアクションを選択</p>
+                                            <div className="flex gap-3">
+                                                <button onClick={startLesson} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-indigo-200 text-sm">
+                                                    次の問題へ進む
+                                                </button>
+                                                <button onClick={() => setAppState('save_prompt')} className="flex-1 py-4 bg-slate-800 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-slate-200 text-sm">
+                                                    学習を終了する
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {appState === 'save_prompt' && (
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in mt-6">
+                                <h2 className="text-xl font-bold mb-6 text-center text-slate-800 tracking-tight">学習の終了と保存</h2>
+                                <p className="text-sm text-slate-600 mb-6 text-center leading-relaxed">
+                                    本日の学習結果およびフィードバック履歴をファイルに保存できます。保存後、または保存しない場合は「テーマ入力画面に戻る」を押してください。
+                                </p>
+                                <div className="space-y-4">
+                                    <button onClick={triggerSaveLearningData} className="w-full bg-indigo-50 text-indigo-700 font-bold py-4 rounded-2xl border border-indigo-100 flex justify-center items-center active:scale-95 transition-all shadow-sm">
+                                        <Icon name="Save" className="mr-3" size={16} /> 学習結果を保存
+                                    </button>
+                                    <button onClick={triggerSaveFeedback} className="w-full bg-emerald-50 text-emerald-700 font-bold py-4 rounded-2xl border border-emerald-100 flex justify-center items-center active:scale-95 transition-all shadow-sm">
+                                        <Icon name="Download" className="mr-3" size={16} /> フィードバック解説を保存
+                                    </button>
+                                    <div className="pt-2">
+                                        <button onClick={() => setAppState('theme_input')} className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center active:scale-95 transition-all shadow-lg shadow-slate-200">
+                                            <Icon name="Home" className="mr-3" size={16} /> テーマ入力画面に戻る
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         )}
                     </main>
 
-                    <footer className="fixed bottom-0 w-full bg-white border-t border-slate-100 p-2.5 text-[10px] text-slate-400 text-center z-40 font-mono tracking-tight flex justify-center gap-4">
+                    <footer className="fixed bottom-0 w-full bg-white border-t border-slate-100 p-2.5 text-[10px] text-slate-400 text-center z-30 font-mono tracking-tight flex justify-center gap-4">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
                         <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini-2.5-Flash</span>
                     </footer>
