@@ -367,7 +367,6 @@
 
             const callAIWithFallback = async (prompt, key, isJson = true) => {
                 const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-3-flash-preview"];
-                let lastError = null;
 
                 for (let i = 0; i < models.length; i++) {
                     const modelId = models[i];
@@ -376,13 +375,7 @@
                     
                     const payload = {
                         contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: isJson ? { 
-                            responseMimeType: "application/json", 
-                            temperature: 1.0, // 少し多様性を持たせる
-                            topP: 0.95,
-                            topK: 40,
-                            maxOutputTokens: 1024
-                        } : { temperature: 1.0 }
+                        generationConfig: isJson ? { responseMimeType: "application/json", temperature: 0.7 } : { temperature: 0.7 }
                     };
 
                     try {
@@ -392,36 +385,33 @@
                             body: JSON.stringify(payload) 
                         });
 
-                        const responseData = await response.json();
-                        
-                        if (!response.ok) {
-                            const errorDetail = responseData.error?.message || "Unknown error";
-                            addLog(`エラー [${modelId}]: HTTP ${response.status} - ${errorDetail}`);
-                            if (response.status === 429) {
-                                addLog(`レートリミット到達。次モデルへ。`);
-                                continue;
+                        if (response.status === 429) {
+                            addLog(`[警告]: ${modelId} レートリミット (429) に達しました。`);
+                            if (i === models.length - 1) {
+                                throw new Error("全モデルのレートリミットに達しました。しばらく時間をおいてください。");
                             }
-                            lastError = `モデル ${modelId} エラー: ${errorDetail}`;
                             continue; // 次のモデルへ
                         }
 
-                        // レスポンスの抽出
-                        const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (!text) {
-                            addLog(`警告 [${modelId}]: 有効な回答テキストが見つかりません。構造: ${JSON.stringify(responseData).substring(0, 100)}...`);
-                            continue;
+                        if (!response.ok) {
+                            const errBody = await response.json().catch(() => ({}));
+                            throw new Error(`API Error ${response.status} (${modelId}): ${errBody.error?.message || '不明なエラー'}`);
                         }
 
-                        addLog(`成功 [${modelId}]: 回答を受信しました。`);
-                        return isJson ? JSON.parse(text) : text;
+                        const data = await response.json();
+                        const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        
+                        addLog(`[AI成功]: モデル ${modelId} でレスポンスを受信しました。`);
+                        return isJson ? JSON.parse(result) : result;
 
                     } catch (e) {
-                        addLog(`例外 [${modelId}]: ${e.message}`);
-                        lastError = e.message;
-                        if (i === models.length - 1) throw new Error(`全モデルでエラー: ${lastError}`);
+                        if (e.message.includes("全モデル") || i === models.length - 1) {
+                            addLog(`[致命的エラー]: ${e.message}`);
+                            throw e;
+                        }
+                        addLog(`[エラー]: モデル ${modelId} でエラーが発生しました。次のモデルを試します。 (${e.message})`);
                     }
                 }
-                throw new Error(lastError || "リクエスト失敗");
             };
 
             const handleImport = (e) => {
