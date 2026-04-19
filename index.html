@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.5</title>
+    <title>中国語 SRS学習 v1.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -26,7 +26,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- 250個の文法・慣用表現データ ---
+        // --- 250個の文法・慣用表現データ (ループを用いず全てコードに埋め込み) ---
         const INITIAL_GRAMMAR_LIST = [
             { id: 1, text: "虽然...但是...", meaning: "～だけれども、しかし～" },
             { id: 2, text: "不仅...而且...", meaning: "～だけでなく、さらに～" },
@@ -334,6 +334,7 @@
         function App() {
             const [appState, setAppState] = useState('setup');
             const [theme, setTheme] = useState('');
+            // learningDataは常に250個の配列を維持し、個々の進捗が更新される
             const [learningData, setLearningData] = useState([]);
             const [feedbackHistory, setFeedbackHistory] = useState([]);
             const [currentTask, setCurrentTask] = useState(null);
@@ -351,7 +352,7 @@
             }, []);
 
             useEffect(() => {
-                addLog("システム: アプリケーション起動 v1.5");
+                addLog("システム: アプリケーション起動 v1.6");
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
             }, [addLog]);
@@ -383,7 +384,7 @@
                         });
 
                         if (response.status === 429) {
-                            addLog(`[注意]: モデル ${modelId} がレートリミットに達しました。`);
+                            addLog(`[注意]: モデル ${modelId} がレートリミットに達しました。リトライせずに次のモデルへ移行します。`);
                             if (i === models.length - 1) {
                                 throw new Error("全モデルのレートリミットに達しました。しばらく時間をおいてください。");
                             }
@@ -418,6 +419,7 @@
                 reader.onload = (ev) => {
                     try {
                         const data = JSON.parse(ev.target.result);
+                        // JSONファイルは250個全体のデータを持つ想定
                         setLearningData(data);
                         setAppState('theme_input');
                         addLog(`システム: 学習データ ${file.name} を読み込みました。`);
@@ -446,6 +448,7 @@
 
             const initFromDefault = () => {
                 addLog("システム: 新規学習データの初期化を開始...");
+                // 250個すべてのデータに対して初期値を設定
                 const initial = INITIAL_GRAMMAR_LIST.map(g => ({
                     id: g.id,
                     text: g.text,
@@ -457,6 +460,9 @@
                 }));
                 setLearningData(initial);
                 setStorageName('srs_learning_data.json');
+                // 自動保存(localStorage)
+                localStorage.setItem('srs_local_save', JSON.stringify(initial));
+                addLog("システム: 250個の学習データを初期化し、内部に自動保存しました。");
                 setAppState('theme_input');
             };
 
@@ -545,6 +551,7 @@
                 };
                 setFeedbackHistory(prev => [...prev, newFeedbackEntry]);
 
+                // learningData (250個のリスト) のうち、該当する項目だけを更新
                 const nextData = learningData.map(item => {
                     if (item.id === currentTask.item.id) {
                         const p = currentTask.pattern;
@@ -564,7 +571,9 @@
                     }
                     return item;
                 });
+                
                 setLearningData(nextData);
+                // 内部ストレージに250個全体のデータを上書き自動保存
                 localStorage.setItem('srs_local_save', JSON.stringify(nextData));
                 addLog("システム: 学習結果を自動保存しました。アクション待機中...");
 
@@ -572,10 +581,11 @@
             };
 
             const triggerSaveLearningData = async () => {
+                // learningData は常に250個全ての文法データを持つ
                 const name = await saveFile(JSON.stringify(learningData, null, 2), storageName);
                 if (name) {
                     setStorageName(name);
-                    addLog(`システム: 学習データを ${name} に保存完了。`);
+                    addLog(`システム: 250個全ての学習データを ${name} に保存完了。`);
                 }
             };
 
@@ -593,7 +603,7 @@
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.5</span></div>
+                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.6</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 active:scale-90 transition-all">
                             <Icon name="Settings" />
                         </button>
@@ -609,14 +619,14 @@
 
                         {appState === 'setup' && (
                             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in mt-6">
-                                <h2 className="text-xl font-bold mb-6 text-center text-slate-800 tracking-tight">学習データの準備</h2>
+                                <h2 className="text-xl font-bold mb-6 text-center text-slate-800 tracking-tight">過去の学習データを読み込みますか？</h2>
                                 <div className="space-y-4">
                                     <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-5 rounded-2xl border border-indigo-100 flex justify-center items-center cursor-pointer active:bg-indigo-100 transition-colors shadow-sm">
                                         <Icon name="Upload" className="mr-3" /> 学習データをインポート
                                         <input type="file" onChange={handleImport} className="hidden" accept=".json" />
                                     </label>
                                     <button onClick={initFromDefault} className="w-full bg-slate-900 text-white font-bold py-5 rounded-2xl flex justify-center items-center active:bg-black transition-colors shadow-lg shadow-slate-200">
-                                        <Icon name="FilePlus" className="mr-3" /> 新規学習データを作成
+                                        <Icon name="FilePlus" className="mr-3" /> いいえ（新規学習データを作成）
                                     </button>
                                 </div>
                             </div>
@@ -669,7 +679,7 @@
                                 </div>
                                 <div className="space-y-4 text-sm">
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest">問題</p>
+                                        <p className="text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest">問題の例文</p>
                                         <p className="font-bold text-slate-700">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</p>
                                     </div>
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
@@ -681,18 +691,18 @@
                                         <p className="font-bold text-emerald-900">{evaluation.modelAnswer}</p>
                                     </div>
                                     <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-                                        <p className="text-[10px] text-amber-600 font-black mb-1 uppercase tracking-widest">フィードバック</p>
+                                        <p className="text-[10px] text-amber-600 font-black mb-1 uppercase tracking-widest">フィードバックポイント</p>
                                         <p className="text-amber-900 leading-relaxed">{evaluation.feedback}</p>
                                     </div>
                                     <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
-                                        <p className="text-[10px] text-indigo-600 font-black mb-1 uppercase tracking-widest">文法解説</p>
+                                        <p className="text-[10px] text-indigo-600 font-black mb-1 uppercase tracking-widest">文法の解説</p>
                                         <p className="text-indigo-900 leading-relaxed">{currentTask.aiData.explanation}</p>
                                     </div>
                                 </div>
                                 <div className="pt-6 border-t border-slate-100">
                                     {appState === 'result' ? (
                                         <>
-                                            <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">自己評価を入力して次へ</p>
+                                            <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">理解度を入力して待機</p>
                                             <div className="flex gap-2">
                                                 {[1,2,3,4,5].map(l => (
                                                     <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-5 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-slate-700 active:scale-90 transition-all shadow-sm">
@@ -726,7 +736,7 @@
                                 </p>
                                 <div className="space-y-4">
                                     <button onClick={triggerSaveLearningData} className="w-full bg-indigo-50 text-indigo-700 font-bold py-4 rounded-2xl border border-indigo-100 flex justify-center items-center active:scale-95 transition-all shadow-sm">
-                                        <Icon name="Save" className="mr-3" size={16} /> 学習結果を保存
+                                        <Icon name="Save" className="mr-3" size={16} /> 学習結果を保存 (全250文法)
                                     </button>
                                     <button onClick={triggerSaveFeedback} className="w-full bg-emerald-50 text-emerald-700 font-bold py-4 rounded-2xl border border-emerald-100 flex justify-center items-center active:scale-95 transition-all shadow-sm">
                                         <Icon name="Download" className="mr-3" size={16} /> フィードバック解説を保存
