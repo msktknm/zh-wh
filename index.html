@@ -38,7 +38,6 @@
             { id: 8, text: "只要...就...", meaning: "～しさえすれば" },
             { id: 9, text: "只有...才...", meaning: "～してこそはじめて～" },
             { id: 10, text: "与其...不如...", meaning: "～よりは～のほうがいい" },
-            // 250個まで拡張（サンプルとしてループ生成。実際はここを個別の文法で埋める想定）
             ...Array.from({ length: 240 }, (_, i) => ({
                 id: i + 11,
                 text: `常用文法パターン ${i + 11}`,
@@ -69,7 +68,10 @@
         };
 
         const callAI = async (prompt, apiKey, onLog, isJson = true) => {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // 使用モデル: gemini-2.5-flash に固定
+            const modelId = "gemini-2.5-flash";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+            
             onLog(`[AI送信]: ${prompt.substring(0, 100)}...`);
 
             const payload = {
@@ -87,18 +89,25 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    
                     if (response.status === 429) {
-                        onLog(`[警告]: 429エラー。リトライ中... (${retryCount+1}/5)`);
+                        onLog(`[警告]: 429エラー(Rate Limit)。リトライ中... (${retryCount+1}/5)`);
                         await new Promise(r => setTimeout(r, delays[retryCount]));
                         retryCount++;
                         continue;
                     }
-                    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+                    if (!response.ok) {
+                        const errBody = await response.json().catch(() => ({}));
+                        throw new Error(`API Error ${response.status}: ${errBody.error?.message || 'Unknown error'}`);
+                    }
+
                     const data = await response.json();
                     const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
                     onLog(`[AI受信]: 完了`);
                     return isJson ? JSON.parse(result) : result;
                 } catch (e) {
+                    onLog(`[エラー]: ${e.message}`);
                     if (retryCount === 5) throw e;
                     await new Promise(r => setTimeout(r, delays[retryCount]));
                     retryCount++;
@@ -153,7 +162,6 @@
                 }
             }, [learningData, storageName]);
 
-            // SRS選択アルゴリズム
             const selectNext = () => {
                 addLog("システム: SRSアルゴリズムによる対象選択中...");
                 const now = Date.now();
@@ -168,7 +176,7 @@
                             score = 1000000 + Math.random();
                         } else {
                             const hours = (now - d.lastStudied) / (1000 * 60 * 60);
-                            const interval = Math.pow(d.level, 2) * 12; // レベルが高いほど間隔をあける
+                            const interval = Math.pow(d.level, 2) * 12;
                             score = hours / interval;
                         }
                         if (score > bestScore) {
@@ -243,7 +251,7 @@
                     return item;
                 });
                 setLearningData(nextData);
-                startLesson(); // 次の問題へ
+                startLesson();
             };
 
             return (
@@ -406,7 +414,7 @@
 
             return (
                 <div 
-                    className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[10px] shadow-2xl overflow-hidden flex flex-col border border-slate-700 rounded-t-lg transition-[height,width] duration-200 ease-in-out"
+                    className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[10px] shadow-2xl overflow-hidden flex flex-col border border-slate-700 rounded-t-lg"
                     style={{ 
                         left: `${pos.x}px`, 
                         top: `${pos.y}px`, 
@@ -415,7 +423,6 @@
                         transition: isDragging || isResizing ? 'none' : 'height 0.2s, width 0.2s'
                     }}
                 >
-                    {/* リサイズハンドル (左上) */}
                     {!min && (
                         <div 
                             className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize z-10 hover:bg-emerald-400/20"
@@ -423,7 +430,6 @@
                         ></div>
                     )}
 
-                    {/* ヘッダー/ドラッグハンドル */}
                     <div 
                         className="bg-slate-800 p-2 flex justify-between items-center no-select drag-handle border-b border-slate-700 cursor-move"
                         onPointerDown={(e) => onPointerDown(e, 'drag')}
@@ -449,7 +455,6 @@
                         </div>
                     </div>
 
-                    {/* ログコンテンツ */}
                     {!min && (
                         <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 space-y-1 bg-black/80 log-content select-text overscroll-contain">
                             {logs.length === 0 ? (
