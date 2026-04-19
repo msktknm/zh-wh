@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.2</title>
+    <title>中国語 SRS学習 v1.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -15,7 +15,7 @@
         .log-content::-webkit-scrollbar { width: 4px; }
         .log-content::-webkit-scrollbar-track { background: #1a1a1a; }
         .log-content::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
-        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .no-select { user-select: none; -webkit-user-select: none; }
         .drag-handle { touch-action: none; }
     </style>
@@ -26,8 +26,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- 250個の文法・慣用表現データ (HSK3級以上ベース) ---
-        // ※ループ処理を使わず、250個全てを直接定義しています
+        // --- 250個の文法・慣用表現データ ---
         const INITIAL_GRAMMAR_LIST = [
             { id: 1, text: "虽然...但是...", meaning: "～だけれども、しかし～" },
             { id: 2, text: "不仅...而且...", meaning: "～だけでなく、さらに～" },
@@ -197,7 +196,7 @@
             { id: 166, text: "以...为前提", meaning: "～を前提として" },
             { id: 167, text: "以...为荣", meaning: "～を誇りとする" },
             { id: 168, text: "由...组成", meaning: "～から成る" },
-            { id: 169, text: "由...决定", meaning: "～によって決まる" },
+            { id: 169, text: "由...決定", meaning: "～によって決まる" },
             { id: 170, text: "归...所有", meaning: "～の所有に帰する" },
             { id: 171, text: "非...莫属", meaning: "～の他にはない" },
             { id: 172, text: "无从", meaning: "～するすべがない" },
@@ -254,7 +253,7 @@
             { id: 223, text: "可想而知", meaning: "推して知るべし" },
             { id: 224, text: "由此可见", meaning: "これから見ると" },
             { id: 225, text: "显而易见", meaning: "明らかである" },
-            { id: 226, text: "毫无疑问", meaning: "疑いなく" },
+            { id: 226, text: "毫无疑問", meaning: "疑いなく" },
             { id: 227, text: "不言而喻", meaning: "言うまでもない" },
             { id: 228, text: "众所周知", meaning: "周知の通り" },
             { id: 229, text: "总的来看", meaning: "全体的に見ると" },
@@ -281,6 +280,7 @@
             { id: 250, text: "无论如何也...", meaning: "どうやっても～" }
         ];
 
+        // --- 共通コンポーネント ---
         const Icon = ({ name, size = 20, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
@@ -303,58 +303,40 @@
             return <span ref={iconRef} className="inline-flex items-center justify-center"></span>;
         };
 
-        const callAI = async (prompt, apiKey, onLog, isJson = true) => {
-            // 絶対に gemini-2.5-flash を使用するよう固定
-            const modelId = "gemini-2.5-flash";
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
-            
-            onLog(`[AI送信]: ${prompt.substring(0, 100)}...`);
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: isJson ? { responseMimeType: "application/json", temperature: 0.7 } : { temperature: 0.7 }
-            };
-
-            let retryCount = 0;
-            const delays = [1000, 2000, 4000, 8000, 16000];
-
-            while (retryCount <= 5) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+        // --- ファイル保存ヘルパー ---
+        const saveFile = async (content, defaultName, extension) => {
+            try {
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: defaultName,
+                        types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
                     });
-                    
-                    if (response.status === 429) {
-                        onLog(`[警告]: 429エラー(Rate Limit)。リトライ中... (${retryCount+1}/5)`);
-                        await new Promise(r => setTimeout(r, delays[retryCount]));
-                        retryCount++;
-                        continue;
-                    }
-
-                    if (!response.ok) {
-                        const errBody = await response.json().catch(() => ({}));
-                        throw new Error(`API Error ${response.status}: ${errBody.error?.message || 'Unknown error'}`);
-                    }
-
-                    const data = await response.json();
-                    const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    onLog(`[AI受信]: 完了`);
-                    return isJson ? JSON.parse(result) : result;
-                } catch (e) {
-                    onLog(`[エラー]: ${e.message}`);
-                    if (retryCount === 5) throw e;
-                    await new Promise(r => setTimeout(r, delays[retryCount]));
-                    retryCount++;
+                    const writable = await handle.createWritable();
+                    await writable.write(content);
+                    await writable.close();
+                    return handle.name;
+                } else {
+                    const blob = new Blob([content], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = defaultName;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    return defaultName;
                 }
+            } catch (e) {
+                console.error("Save canceled or failed", e);
+                return null;
             }
         };
 
+        // --- メインアプリ ---
         function App() {
             const [appState, setAppState] = useState('setup');
             const [theme, setTheme] = useState('');
             const [learningData, setLearningData] = useState([]);
+            const [feedbackHistory, setFeedbackHistory] = useState([]);
             const [currentTask, setCurrentTask] = useState(null);
             const [userAnswer, setUserAnswer] = useState('');
             const [evaluation, setEvaluation] = useState(null);
@@ -369,17 +351,48 @@
             }, []);
 
             useEffect(() => {
-                addLog("システム: アプリケーション初期化中...");
+                addLog("システム: アプリケーション起動");
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
             }, [addLog]);
 
-            useEffect(() => {
-                if (learningData.length > 0) {
-                    localStorage.setItem('srs_local_save', JSON.stringify(learningData));
-                    addLog("システム: 学習結果を内部ストレージに自動保存しました。");
+            // レートリミット時はリトライしないAI呼び出し
+            const callAI = async (prompt, key, isJson = true) => {
+                const modelId = "gemini-2.5-flash";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${key}`;
+                addLog(`[AI送信]: ${prompt.substring(0, 50)}...`);
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: isJson ? { responseMimeType: "application/json", temperature: 0.7 } : { temperature: 0.7 }
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status === 429) {
+                        addLog("[エラー]: 429 Rate Limitが発生しました。リトライせずに中断します。");
+                        throw new Error("Rate limit exceeded. Please wait a moment.");
+                    }
+
+                    if (!response.ok) {
+                        const errBody = await response.json().catch(() => ({}));
+                        throw new Error(`API Error ${response.status}: ${errBody.error?.message || 'Unknown'}`);
+                    }
+
+                    const data = await response.json();
+                    const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    addLog(`[AI受信]: 成功`);
+                    return isJson ? JSON.parse(result) : result;
+                } catch (e) {
+                    addLog(`[エラー]: ${e.message}`);
+                    throw e;
                 }
-            }, [learningData, addLog]);
+            };
 
             const handleImport = (e) => {
                 const file = e.target.files[0];
@@ -391,31 +404,33 @@
                         const data = JSON.parse(ev.target.result);
                         setLearningData(data);
                         setAppState('theme_input');
-                        addLog(`システム: ファイル ${file.name} を読み込みました。`);
+                        addLog(`システム: 学習データ ${file.name} を読み込みました。`);
                         setShowSettings(false);
-                    } catch (err) { alert("無効なファイルです"); addLog("エラー: インポート失敗"); }
+                    } catch (err) { addLog("エラー: ファイル解析失敗"); }
                 };
                 reader.readAsText(file);
                 e.target.value = '';
             };
 
-            const handleExport = () => {
-                if (learningData.length === 0) {
-                    alert("保存するデータがありません。");
-                    return;
-                }
-                const blob = new Blob([JSON.stringify(learningData, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = storageName;
-                a.click();
-                URL.revokeObjectURL(url);
-                addLog(`システム: 学習データを ${storageName} としてファイル出力しました。`);
+            const handleImportFeedback = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        if (Array.isArray(data)) {
+                            setFeedbackHistory(data);
+                            addLog(`システム: フィードバック履歴 ${file.name} を追記用に読み込みました (${data.length}件)。`);
+                        }
+                    } catch (err) { addLog("エラー: フィードバックファイル解析失敗"); }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
             };
 
             const initFromDefault = () => {
-                addLog("システム: 新規学習データを作成します。");
+                addLog("システム: 初期化開始...");
                 const initial = INITIAL_GRAMMAR_LIST.map(g => ({
                     id: g.id,
                     text: g.text,
@@ -431,7 +446,7 @@
             };
 
             const selectNext = () => {
-                addLog("システム: SRSアルゴリズムによる対象選択中...");
+                addLog("システム: SRSアルゴリズム実行中...");
                 const now = Date.now();
                 let bestScore = -1;
                 let selected = null;
@@ -444,7 +459,7 @@
                             score = 1000000 + Math.random();
                         } else {
                             const hours = (now - d.lastStudied) / (1000 * 60 * 60);
-                            const interval = Math.pow(d.level, 2) * 12;
+                            const interval = Math.pow(d.level, 2) * 12; // 間隔係数
                             score = hours / interval;
                         }
                         if (score > bestScore) {
@@ -457,29 +472,27 @@
             };
 
             const startLesson = async () => {
-                if (!apiKey) { setShowSettings(true); return; }
+                if (!apiKey) { addLog("システム: APIキーが必要です。"); setShowSettings(true); return; }
                 setAppState('loading');
                 const task = selectNext();
-                addLog(`システム: 「${task.item.text}」(${task.pattern}) を生成中...`);
+                addLog(`システム: 「${task.item.text}」の問題を生成中...`);
                 
                 const prompt = `テーマ「${theme}」と中国語文法「${task.item.text}(意味:${task.item.meaning})」を使用して、以下のJSONを生成してください。
                 {"chinese":"中国語例文","pinyin":"ピンイン","japanese":"日本語訳","explanation":"文法の使い方の解説"}`;
 
                 try {
-                    const res = await callAI(prompt, apiKey, addLog);
+                    const res = await callAI(prompt, apiKey);
                     setCurrentTask({ ...task, aiData: res });
                     setAppState('question');
                     setUserAnswer('');
-                    addLog("システム: 問題生成完了");
                 } catch (e) {
-                    addLog(`エラー: ${e.message}`);
                     setAppState('theme_input');
                 }
             };
 
             const submitAnswer = async () => {
                 setAppState('loading');
-                addLog("システム: AIによる添削中...");
+                addLog("システム: AI添削依頼中...");
                 const target = currentTask.pattern === 'zh-jp' ? currentTask.aiData.japanese : currentTask.aiData.chinese;
                 const prompt = `問題: ${currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}
                 正解の目安: ${target}
@@ -488,17 +501,34 @@
                 {"isCorrect":boolean, "feedback":"具体的なアドバイス", "modelAnswer":"より自然な解答例"}`;
 
                 try {
-                    const res = await callAI(prompt, apiKey, addLog);
+                    const res = await callAI(prompt, apiKey);
                     setEvaluation(res);
                     setAppState('result');
                 } catch (e) {
-                    addLog(`エラー: ${e.message}`);
                     setAppState('question');
                 }
             };
 
-            const finishLesson = (lvl) => {
-                addLog(`システム: 理解度 ${lvl} を記録`);
+            const finishLesson = async (lvl) => {
+                addLog(`システム: 理解度 ${lvl} で更新中...`);
+                
+                // フィードバック履歴に追加
+                const newFeedbackEntry = {
+                    timestamp: new Date().toISOString(),
+                    grammar: currentTask.item.text,
+                    question: currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese,
+                    pinyin: currentTask.aiData.pinyin,
+                    userAnswer: userAnswer,
+                    isCorrect: evaluation.isCorrect,
+                    modelAnswer: evaluation.modelAnswer,
+                    feedback: evaluation.feedback,
+                    explanation: currentTask.aiData.explanation,
+                    userLevel: lvl
+                };
+                const updatedFeedbackHistory = [...feedbackHistory, newFeedbackEntry];
+                setFeedbackHistory(updatedFeedbackHistory);
+
+                // 学習データの更新
                 const nextData = learningData.map(item => {
                     if (item.id === currentTask.item.id) {
                         const p = currentTask.pattern;
@@ -519,13 +549,39 @@
                     return item;
                 });
                 setLearningData(nextData);
+
+                // 自動保存のトリガー（localStorage）
+                localStorage.setItem('srs_local_save', JSON.stringify(nextData));
+                addLog("システム: 学習結果を内部に保存しました。");
+
                 startLesson();
+            };
+
+            const triggerSaveLearningData = async () => {
+                addLog("システム: 学習データ保存ダイアログ表示...");
+                const name = await saveFile(JSON.stringify(learningData, null, 2), storageName, 'json');
+                if (name) {
+                    setStorageName(name);
+                    addLog(`システム: ${name} に保存しました。`);
+                }
+            };
+
+            const triggerSaveFeedback = async () => {
+                addLog("システム: フィードバック解説保存ダイアログ表示...");
+                const name = await saveFile(JSON.stringify(feedbackHistory, null, 2), 'hsk_feedback_history.json', 'json');
+                if (name) addLog(`システム: フィードバックを ${name} に保存しました。`);
+            };
+
+            const saveApiKey = () => {
+                localStorage.setItem('srs_gemini_key', apiKey);
+                addLog("システム: APIキーを保存しました。");
+                setShowSettings(false);
             };
 
             return (
                 <div className="min-h-screen flex flex-col pb-16">
-                    <header className="bg-indigo-700 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-10">
-                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.2</span></div>
+                    <header className="bg-indigo-700 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
+                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.3</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-600 rounded-full hover:bg-indigo-500 transition-colors shadow-sm">
                             <Icon name="Settings" />
                         </button>
@@ -535,12 +591,9 @@
                         {appState === 'setup' && (
                             <div className="bg-white p-6 rounded-2xl shadow-sm border animate-fade-in mt-10">
                                 <h2 className="text-xl font-bold mb-6 text-center text-slate-800">学習データの準備</h2>
-                                <p className="text-sm text-slate-600 mb-6 text-center">
-                                    過去の学習データファイル(JSON)を読み込むか、新規に学習を開始してください。
-                                </p>
                                 <div className="space-y-4">
                                     <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-4 rounded-xl border border-indigo-200 flex justify-center items-center cursor-pointer active:scale-95 transition-transform">
-                                        <Icon name="Upload" className="mr-2" /> 過去の学習データを読み込む
+                                        <Icon name="Upload" className="mr-2" /> 学習データを読み込む
                                         <input type="file" onChange={handleImport} className="hidden" accept=".json" />
                                     </label>
                                     <button onClick={initFromDefault} className="w-full bg-slate-800 text-white font-bold py-4 rounded-xl flex justify-center items-center active:scale-95 transition-transform shadow-lg shadow-slate-300">
@@ -552,8 +605,8 @@
 
                         {appState === 'theme_input' && (
                             <div className="bg-white p-6 rounded-2xl shadow-sm border animate-fade-in mt-10">
-                                <h2 className="font-bold mb-4 text-slate-700">今日の学習テーマ</h2>
-                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 職場のトラブル、旅行の予約" className="w-full border p-4 rounded-xl mb-4 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                <h2 className="font-bold mb-4 text-slate-700">今日の学習テーマを入力</h2>
+                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 職場の技術的トラブル" className="w-full border p-4 rounded-xl mb-4 bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none" />
                                 <button onClick={startLesson} disabled={!theme} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl disabled:bg-slate-300 shadow-lg">学習開始</button>
                             </div>
                         )}
@@ -561,86 +614,84 @@
                         {appState === 'loading' && (
                             <div className="flex flex-col items-center justify-center py-20 animate-pulse">
                                 <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                <p className="text-slate-500 font-medium">AIが処理中...</p>
+                                <p className="text-slate-500 font-medium">AI処理中...</p>
                             </div>
                         )}
 
                         {appState === 'question' && (
                             <div className="bg-white p-6 rounded-2xl shadow-sm border animate-fade-in space-y-4">
                                 <div className="flex justify-between text-[10px] font-bold text-indigo-500 uppercase">
-                                    <span>{currentTask.pattern === 'zh-jp' ? '中国語 → 日本語' : '日本語 → 中国語'}</span>
+                                    <span>{currentTask.pattern === 'zh-jp' ? 'ZH → JP' : 'JP → ZH'}</span>
                                     <span>{currentTask.item.text}</span>
                                 </div>
                                 <div className="p-4 bg-indigo-50 rounded-xl">
-                                    <h3 className="text-2xl font-bold mb-2 leading-tight">
+                                    <h3 className="text-2xl font-bold mb-2">
                                         {currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}
                                     </h3>
                                     {currentTask.pattern === 'zh-jp' && <p className="text-indigo-400 font-mono text-sm">{currentTask.aiData.pinyin}</p>}
                                 </div>
-                                <textarea value={userAnswer} onChange={e => setUserAnswer(e.target.value)} placeholder="回答を入力してください..." className="w-full border p-4 h-32 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
-                                <button onClick={submitAnswer} disabled={!userAnswer.trim()} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg disabled:bg-slate-300">送信</button>
+                                <textarea value={userAnswer} onChange={e => setUserAnswer(e.target.value)} placeholder="訳を入力..." className="w-full border p-4 h-32 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                <button onClick={submitAnswer} disabled={!userAnswer.trim()} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg disabled:bg-slate-300">回答を送信</button>
                             </div>
                         )}
 
                         {appState === 'result' && (
                             <div className="bg-white p-6 rounded-2xl shadow-sm border animate-fade-in space-y-6">
                                 <div className="text-center">
-                                    <div className={`text-4xl mb-2 ${evaluation.isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                                        <Icon name={evaluation.isCorrect ? "CheckCircle" : "XCircle"} size={48} />
-                                    </div>
-                                    <h3 className="text-xl font-bold">{evaluation.isCorrect ? '正解！' : '不正解'}</h3>
+                                    <Icon name={evaluation.isCorrect ? "CheckCircle" : "XCircle"} size={48} className={evaluation.isCorrect ? 'text-green-500' : 'text-red-500'} />
+                                    <h3 className="text-xl font-bold mt-2">{evaluation.isCorrect ? '正解！' : '不正解'}</h3>
                                 </div>
                                 <div className="space-y-4 text-sm">
-                                    <div className="bg-slate-50 p-4 rounded-lg">
-                                        <p className="font-bold text-slate-400 mb-1">出題された問題</p>
-                                        <p className="text-lg font-bold">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</p>
-                                        {currentTask.pattern === 'zh-jp' && <p className="text-indigo-400 font-mono text-sm">{currentTask.aiData.pinyin}</p>}
-                                    </div>
-                                    <div className="bg-slate-50 p-4 rounded-lg"><p className="font-bold text-slate-400 mb-1">模範解答</p><p className="text-lg font-bold">{evaluation.modelAnswer}</p></div>
-                                    <div className="bg-amber-50 p-4 rounded-lg"><p className="font-bold text-amber-600 mb-1">フィードバックポイント</p><p>{evaluation.feedback}</p></div>
-                                    <div className="bg-indigo-50 p-4 rounded-lg"><p className="font-bold text-indigo-600 mb-1">文法の解説</p><p>{currentTask.aiData.explanation}</p></div>
+                                    <div className="bg-slate-50 p-3 rounded-lg"><p className="text-xs text-slate-400 font-bold mb-1">問題</p><p className="font-bold">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</p></div>
+                                    <div className="bg-slate-50 p-3 rounded-lg"><p className="text-xs text-slate-400 font-bold mb-1">模範解答</p><p className="font-bold">{evaluation.modelAnswer}</p></div>
+                                    <div className="bg-amber-50 p-3 rounded-lg"><p className="text-xs text-amber-600 font-bold mb-1">フィードバック</p><p>{evaluation.feedback}</p></div>
+                                    <div className="bg-indigo-50 p-3 rounded-lg"><p className="text-xs text-indigo-600 font-bold mb-1">解説</p><p>{currentTask.aiData.explanation}</p></div>
                                 </div>
                                 <div className="pt-4 border-t">
-                                    <p className="text-center text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">自己評価 (1-5)</p>
+                                    <p className="text-center text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-tighter">理解度を評価して次へ</p>
                                     <div className="flex gap-2">
                                         {[1,2,3,4,5].map(l => (
-                                            <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-4 bg-slate-100 rounded-xl font-bold text-slate-700 active:bg-indigo-600 active:text-white transition-colors">{l}</button>
+                                            <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-4 bg-slate-100 rounded-xl font-bold text-slate-700 active:bg-indigo-600 active:text-white">{l}</button>
                                         ))}
                                     </div>
-                                    <p className="text-[10px] text-center text-slate-400 mt-2">※選択すると学習結果が自動保存され、次の問題へ進みます</p>
                                 </div>
                             </div>
                         )}
                     </main>
 
-                    <footer className="fixed bottom-0 w-full bg-white border-t p-2 text-[10px] text-slate-400 text-center z-20 font-mono">
-                        {appState !== 'setup' ? `File: ${storageName}` : 'No file loaded'} | Model: Gemini-2.5-Flash
+                    <footer className="fixed bottom-0 w-full bg-white border-t p-2 text-[10px] text-slate-400 text-center z-40 font-mono">
+                        {appState !== 'setup' ? `File: ${storageName}` : 'Init required'} | Model: Gemini-2.5-Flash
                     </footer>
 
                     {showSettings && (
                         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-                            <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl relative animate-fade-in">
-                                <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-700"><Icon name="X" /></button>
+                            <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl relative animate-fade-in overflow-y-auto max-h-[90vh]">
+                                <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400"><Icon name="X" /></button>
                                 <h2 className="font-bold text-lg mb-6 flex items-center"><Icon name="Settings" className="mr-2 text-indigo-600" />設定 / データ管理</h2>
                                 
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 mb-2 uppercase">Gemini API Key</label>
-                                        <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="AIza..." />
-                                        <button onClick={() => { localStorage.setItem('srs_gemini_key', apiKey); addLog("システム: APIキーを保存しました。"); }} className="mt-2 w-full bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-sm">
-                                            APIキーを保存
+                                        <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Gemini API Key</label>
+                                        <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 text-sm mb-2" placeholder="AIza..." />
+                                        <button onClick={saveApiKey} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl text-sm shadow-md">保存して閉じる</button>
+                                    </div>
+
+                                    <div className="border-t pt-4 space-y-3">
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">学習データの管理</p>
+                                        <button onClick={triggerSaveLearningData} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl flex justify-center items-center text-sm">
+                                            <Icon name="Save" className="mr-2" size={16} /> 学習結果を名前を付けて保存
                                         </button>
                                     </div>
 
-                                    <div className="border-t pt-4">
-                                        <p className="text-xs font-bold text-slate-500 mb-3 uppercase">学習データの管理</p>
-                                        <button onClick={handleExport} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl flex justify-center items-center mb-3">
-                                            <Icon name="Download" className="mr-2" size={16} /> JSONファイルとして保存
-                                        </button>
-                                        <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-100 flex justify-center items-center cursor-pointer">
-                                            <Icon name="Upload" className="mr-2" size={16} /> JSONファイルを読み込む
-                                            <input type="file" onChange={handleImport} className="hidden" accept=".json" />
+                                    <div className="border-t pt-4 space-y-3">
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">フィードバック履歴 ({feedbackHistory.length}件)</p>
+                                        <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border border-indigo-100 flex justify-center items-center cursor-pointer text-sm">
+                                            <Icon name="FileUp" className="mr-2" size={16} /> 履歴ファイルを追記用に読込
+                                            <input type="file" onChange={handleImportFeedback} className="hidden" accept=".json" />
                                         </label>
+                                        <button onClick={triggerSaveFeedback} className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl flex justify-center items-center text-sm">
+                                            <Icon name="Download" className="mr-2" size={16} /> 解説履歴を名前を付けて保存
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -654,7 +705,7 @@
 
         const LogWindow = ({ logs, onClear }) => {
             const [min, setMin] = useState(true);
-            const [size, setSize] = useState({ w: 320, h: 350 });
+            const [size, setSize] = useState({ w: 320, h: 250 });
             const [pos, setPos] = useState({ x: window.innerWidth - 340, y: window.innerHeight - 50 });
             const [isDragging, setIsDragging] = useState(false);
             const [isResizing, setIsResizing] = useState(false);
@@ -685,13 +736,10 @@
                 } else if (isResizing) {
                     const dx = dragRef.current.x - e.clientX;
                     const dy = dragRef.current.y - e.clientY;
-                    const newW = Math.max(150, dragRef.current.w + dx);
-                    const newH = Math.max(80, dragRef.current.h + dy);
+                    const newW = Math.max(200, dragRef.current.w + dx);
+                    const newH = Math.max(100, dragRef.current.h + dy);
                     setSize({ w: newW, h: newH });
-                    setPos({ 
-                        x: dragRef.current.px - (newW - dragRef.current.w), 
-                        y: dragRef.current.py - (newH - dragRef.current.h) 
-                    });
+                    setPos({ x: dragRef.current.px - (newW - dragRef.current.w), y: dragRef.current.py - (newH - dragRef.current.h) });
                 }
             }, [isDragging, isResizing]);
 
@@ -704,9 +752,6 @@
                 if (isDragging || isResizing) {
                     window.addEventListener('pointermove', onPointerMove);
                     window.addEventListener('pointerup', onPointerUp);
-                } else {
-                    window.removeEventListener('pointermove', onPointerMove);
-                    window.removeEventListener('pointerup', onPointerUp);
                 }
                 return () => {
                     window.removeEventListener('pointermove', onPointerMove);
@@ -725,57 +770,19 @@
             };
 
             return (
-                <div 
-                    className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[10px] shadow-2xl overflow-hidden flex flex-col border border-slate-700 rounded-t-lg"
-                    style={{ 
-                        left: `${pos.x}px`, 
-                        top: `${pos.y}px`, 
-                        width: `${size.w}px`, 
-                        height: min ? '32px' : `${size.h}px`,
-                        transition: isDragging || isResizing ? 'none' : 'height 0.2s, width 0.2s'
-                    }}
-                >
-                    {!min && (
-                        <div 
-                            className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize z-10 hover:bg-emerald-400/20"
-                            onPointerDown={(e) => onPointerDown(e, 'resize')}
-                        ></div>
-                    )}
-
-                    <div 
-                        className="bg-slate-800 p-2 flex justify-between items-center no-select drag-handle border-b border-slate-700 cursor-move"
-                        onPointerDown={(e) => onPointerDown(e, 'drag')}
-                    >
-                        <div className="flex items-center gap-1 opacity-80"><Icon name="Terminal" size={12}/> SYSTEM LOG</div>
+                <div className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[9px] shadow-2xl overflow-hidden flex flex-col border border-slate-700 rounded-t-lg"
+                    style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: `${size.w}px`, height: min ? '32px' : `${size.h}px` }}>
+                    {!min && <div className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize z-10" onPointerDown={(e) => onPointerDown(e, 'resize')}></div>}
+                    <div className="bg-slate-800 p-2 flex justify-between items-center no-select drag-handle border-b border-slate-700 cursor-move" onPointerDown={(e) => onPointerDown(e, 'drag')}>
+                        <div className="flex items-center gap-1 opacity-80"><Icon name="Terminal" size={10}/> LOG</div>
                         <div className="flex items-center gap-2">
-                            {!min && <button onClick={copyLogs} className="hover:text-white px-1"><Icon name="Copy" size={12}/></button>}
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    const nextMin = !min;
-                                    setMin(nextMin);
-                                    if (nextMin) {
-                                        setPos({ x: window.innerWidth - size.w - 20, y: window.innerHeight - 50 });
-                                    } else {
-                                        setPos({ x: window.innerWidth - size.w - 20, y: window.innerHeight - size.h - 40 });
-                                    }
-                                }} 
-                                className="hover:text-white px-1"
-                            >
-                                <Icon name={min ? "ChevronUp" : "ChevronDown"} size={14}/>
-                            </button>
+                            {!min && <button onClick={copyLogs} title="Copy logs"><Icon name="Copy" size={12}/></button>}
+                            <button onClick={(e) => { e.stopPropagation(); setMin(!min); }} className="hover:text-white"><Icon name={min ? "ChevronUp" : "ChevronDown"} size={14}/></button>
                         </div>
                     </div>
-
                     {!min && (
                         <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 space-y-1 bg-black/80 log-content select-text overscroll-contain">
-                            {logs.length === 0 ? (
-                                <div className="text-slate-600 italic">No logs...</div>
-                            ) : (
-                                logs.map((log, i) => (
-                                    <div key={i} className="border-b border-slate-800 pb-1 last:border-0">{log}</div>
-                                ))
-                            )}
+                            {logs.map((log, i) => (<div key={i} className="border-b border-slate-800/50 pb-0.5 last:border-0">{log}</div>))}
                         </div>
                     )}
                 </div>
