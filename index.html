@@ -1,160 +1,390 @@
-4/19, 了（完了）
-4/19, 了（変化）
-4/19, 过（経験）
-4/19, 着（持続）
-4/19, 把構文
-4/20, 被構文
-4/20, 是…的構文
-4/20, 连…都…
-4/20, 越…越…
-4/20, 一边…一边…
-4/21, 虽然…但是…
-4/21, 如果…就…
-4/21, 因为…所以…
-4/21, 不但…而且…
-4/21, 只有…才…
-4/22, 即使…也…
-4/22, 与其…不如…
-4/22, 不仅…还…
-4/22, 要是…就…
-4/22, 既然…就…
-4/23, 无论…都…
-4/23, 一…就…
-4/23, 刚…就…
-4/23, 快要…了
-4/23, 差点儿…
-4/24, 几乎…
-4/24, 从来不…
-4/24, 一直…
-4/24, 正在…
-4/24, 已经…了
-4/25, 还没…
-4/25, 先…再…
-4/25, 除了…以外…
-4/25, 对…来说
-4/25, 关于…
-4/26, 至于…
-4/26, 由于…
-4/26, 为了…
-4/26, 通过…
-4/26, 根据…
-4/27, 按照…
-4/27, 随着…
-4/27, 以…为主
-4/27, 以便…
-4/27, 以免…
-4/28, 比…更…
-4/28, 没有…那么…
-4/28, 越来越…
-4/28, 更…了
-4/28, 有点儿…
-4/29, 太…了
-4/29, 非常…
-4/29, 十分…
-4/29, 极其…
-4/29, 相当…
-4/30, 根本不…
-4/30, 并不…
-4/30, 未必…
-4/30, 难免…
-4/30, 不得不…
-5/1, 好像…
-5/1, 似乎…
-5/1, 看来…
-5/1, 据说…
-5/1, 听说…
-5/2, 其实…
-5/2, 事实上…
-5/2, 一般来说…
-5/2, 换句话说…
-5/2, 也就是说…
-5/3, 比如…
-5/3, 例如…
-5/3, 一方面…另一方面…
-5/3, 与此同时…
-5/3, 相反…
-5/4, 然而…
-5/4, 不过…
-5/4, 而且…
-5/4, 因此…
-5/4, 从而…
-5/5, 导致…
-5/5, 造成…
-5/5, 引起…
-5/5, 影响…
-5/5, 决定…
-5/6, 有助于…
-5/6, 有利于…
-5/6, 不利于…
-5/6, 适合…
-5/6, 符合…
-5/7, 提高…
-5/7, 增强…
-5/7, 改善…
-5/7, 优化…
-5/7, 促进…
-5/8, 避免…
-5/8, 防止…
-5/8, 控制…
-5/8, 解决…
-5/8, 应对…
-5/9, 涉及…
-5/9, 包括…
-5/9, 由…组成
-5/9, 属于…
-5/9, 来源于…
-5/10, 基于…
-5/10, 在…情况下
-5/10, 在…过程中
-5/10, 在…方面
-5/10, 在…范围内
-5/11, 对…有影响
-5/11, 对…有帮助
-5/11, 对…有利
-5/11, 对…不利
-5/11, 对…感兴趣
-5/12, 使…
-5/12, 让…
-5/12, 叫…
-5/12, 给…
-5/12, 将…
-5/13, 向…
-5/13, 往…
-5/13, 从…
-5/13, 到…
-5/13, 离…
-5/14, 跟…
-5/14, 和…
-5/14, 与…
-5/14, 对于…
-5/14, 至于…
-5/15, 连…也…
-5/15, 甚至…
-5/15, 何况…
-5/15, 难道…吗
-5/15, 不是…吗
-5/16, 怎么…呢
-5/16, 为什么…
-5/16, 如何…
-5/16, 怎样…
-5/16, 多少…
-5/17, 一会儿…一会儿…
-5/17, 一旦…就…
-5/17, 一再…
-5/17, 一共…
-5/17, 一律…
-5/18, 逐渐…
-5/18, 慢慢…
-5/18, 不断…
-5/18, 持续…
-5/18, 连续…
-5/19, 反复…
-5/19, 频繁…
-5/19, 偶尔…
-5/19, 有时…
-5/19, 常常…
-5/20, 经常…
-5/20, 往往…
-5/20, 总是…
-5/20, 始终…
-5/20, 终于…
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国語 SRS学習アプリ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.473.0/dist/umd/lucide.min.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        /* Custom scrollbar for logs */
+        .log-content::-webkit-scrollbar { width: 6px; }
+        .log-content::-webkit-scrollbar-track { background: #1a1a1a; }
+        .log-content::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        
+        body { -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- Constants ---
+        const INITIAL_GRAMMAR_LIST = [
+            { id: 1, text: "虽然...但是...", meaning: "～だけれども、しかし～" },
+            { id: 2, text: "不仅...而且...", meaning: "～だけでなく、さらに～" },
+            { id: 3, text: "由于...", meaning: "～なので、～に起因して" },
+            { id: 4, text: "无论...都...", meaning: "～であっても（すべて）～" },
+            { id: 5, text: "一...就...", meaning: "～するとすぐに～" },
+            { id: 6, text: "既然...就...", meaning: "～した以上は、～だからには" },
+            { id: 7, text: "即使...也...", meaning: "たとえ～だとしても" },
+            { id: 8, text: "只要...就...", meaning: "～しさえすれば" }
+        ];
+
+        // --- Components ---
+        // 修正版 Icon コンポーネント: Lucide の UMD 版に対応
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconRef = useRef(null);
+
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    // 既存のコンテンツをクリア
+                    iconRef.current.innerHTML = '';
+                    
+                    // 新しいアイコンを作成
+                    const iconName = name.charAt(0).toLowerCase() + name.slice(1).replace(/([A-Z])/g, '-$1').toLowerCase();
+                    const icon = document.createElement('i');
+                    icon.setAttribute('data-lucide', iconName);
+                    icon.style.width = `${size}px`;
+                    icon.style.height = `${size}px`;
+                    if (className) icon.className = className;
+                    
+                    iconRef.current.appendChild(icon);
+                    window.lucide.createIcons({
+                        attrs: {
+                            strokeWidth: 2,
+                            width: size,
+                            height: size
+                        },
+                        nameAttr: 'data-lucide',
+                        icons: window.lucide.icons
+                    });
+                }
+            }, [name, size, className]);
+
+            return <span ref={iconRef} className="inline-flex items-center justify-center"></span>;
+        };
+
+        // --- AI API Logic ---
+        const callAI = async (prompt, customApiKey, systemInstruction = "あなたは優秀な中国語教師です。", isJson = true) => {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${customApiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+            };
+
+            const retries = 5;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) throw new Error("No text in response");
+                    return isJson ? JSON.parse(text) : text;
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(r => setTimeout(r, delays[i]));
+                }
+            }
+        };
+
+        // --- Main App ---
+        function App() {
+            const [appState, setAppState] = useState('init');
+            const [theme, setTheme] = useState('');
+            const [learningData, setLearningData] = useState([]);
+            const [currentTask, setCurrentTask] = useState(null);
+            const [userAnswer, setUserAnswer] = useState('');
+            const [evaluation, setEvaluation] = useState(null);
+            const [userApiKey, setUserApiKey] = useState('');
+            const [showSettings, setShowSettings] = useState(false);
+            const [logs, setLogs] = useState([]);
+            const [toastMessage, setToastMessage] = useState('');
+
+            const addLog = useCallback((msg) => {
+                const now = new Date();
+                const ts = `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+                setLogs(prev => [...prev, `${ts} ${msg}`]);
+            }, []);
+
+            const showToast = (msg) => {
+                setToastMessage(msg);
+                setTimeout(() => setToastMessage(''), 3000);
+            };
+
+            // Initialization
+            useEffect(() => {
+                const savedKey = localStorage.getItem('chineseSrsApiKey');
+                if (savedKey) setUserApiKey(savedKey);
+
+                const savedData = localStorage.getItem('chineseSrsData');
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            setLearningData(parsed);
+                            addLog("保存されたデータをロードしました。");
+                            setAppState('theme_input');
+                            return;
+                        }
+                    } catch (e) { addLog("データロード失敗"); }
+                }
+                setAppState('setup');
+            }, [addLog]);
+
+            useEffect(() => {
+                if (learningData.length > 0) {
+                    localStorage.setItem('chineseSrsData', JSON.stringify(learningData));
+                }
+            }, [learningData]);
+
+            // Handlers
+            const handleExport = () => {
+                const blob = new Blob([JSON.stringify(learningData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `chinese_srs_${new Date().toISOString().slice(0,10)}.json`;
+                a.click();
+                showToast("エクスポート完了");
+            };
+
+            const handleImport = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const data = JSON.parse(ev.target.result);
+                        setLearningData(data);
+                        setAppState('theme_input');
+                        showToast("インポート完了");
+                        setShowSettings(false);
+                    } catch (err) { alert("無効なファイルです"); }
+                };
+                reader.readAsText(file);
+            };
+
+            const loadSample = () => {
+                const data = INITIAL_GRAMMAR_LIST.map(g => ({
+                    ...g, patterns: {
+                        'zh-jp': { lastStudied: null, correctCount: 0, incorrectCount: 0, totalCount: 0, understandingLevel: 1 },
+                        'jp-zh': { lastStudied: null, correctCount: 0, incorrectCount: 0, totalCount: 0, understandingLevel: 1 }
+                    }
+                }));
+                setLearningData(data);
+                setAppState('theme_input');
+                addLog("サンプルデータを読み込みました");
+            };
+
+            const selectNext = () => {
+                const now = Date.now();
+                let best = -1; let selected = null;
+                learningData.forEach(item => {
+                    ['zh-jp', 'jp-zh'].forEach(p => {
+                        const d = item.patterns[p];
+                        const score = !d.lastStudied ? (100000 + Math.random()) : ((now - d.lastStudied) / (1000 * 60 * 60)) / (d.understandingLevel * 24);
+                        if (score > best) { best = score; selected = { item, pattern: p }; }
+                    });
+                });
+                return selected;
+            };
+
+            const generateQuestion = async (t) => {
+                if (!userApiKey) { alert("先に設定画面でAPIキーを入力してください"); setShowSettings(true); return; }
+                setAppState('loading');
+                const task = selectNext();
+                try {
+                    addLog(`問題生成開始: ${task.item.text} (${task.pattern})`);
+                    const res = await callAI(`テーマ「${t}」で、文法「${task.item.text}」を使った中国語例文と日本語訳を生成。JSON: {chinese, pinyin, japanese, grammarExplanation}`, userApiKey);
+                    setCurrentTask({ ...task, aiData: res });
+                    setAppState('question');
+                    setUserAnswer('');
+                    addLog("生成成功");
+                } catch (e) { addLog("生成失敗: " + e.message); setAppState('theme_input'); }
+            };
+
+            const checkAnswer = async () => {
+                setAppState('loading');
+                try {
+                    addLog("添削中...");
+                    const prompt = `問題: ${currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese} に対する解答「${userAnswer}」を添削。JSON: {isCorrect: boolean, feedback: string, correctedAnswer: string}`;
+                    const res = await callAI(prompt, userApiKey);
+                    setEvaluation(res);
+                    setAppState('feedback');
+                } catch (e) { addLog("添削失敗"); setAppState('question'); }
+            };
+
+            const updateRecord = (lvl) => {
+                setLearningData(prev => prev.map(i => i.id === currentTask.item.id ? {
+                    ...i, patterns: { ...i.patterns, [currentTask.pattern]: {
+                        ...i.patterns[currentTask.pattern],
+                        lastStudied: Date.now(),
+                        totalCount: i.patterns[currentTask.pattern].totalCount + 1,
+                        correctCount: i.patterns[currentTask.pattern].correctCount + (evaluation.isCorrect ? 1 : 0),
+                        understandingLevel: lvl
+                    }}
+                } : i));
+                generateQuestion(theme);
+            };
+
+            return (
+                <div className="min-h-screen pb-24">
+                    <header className="bg-indigo-600 text-white p-4 shadow flex justify-between items-center sticky top-0 z-30">
+                        <div className="flex items-center space-x-2"><Icon name="Brain" /><h1 className="font-bold">中国語 SRS学習</h1></div>
+                        <button onClick={() => setShowSettings(true)} className="p-2 hover:bg-indigo-500 rounded-full"><Icon name="Settings" /></button>
+                    </header>
+
+                    <main className="p-4 max-w-md mx-auto mt-4">
+                        {toastMessage && <div className="fixed top-20 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full z-50">{toastMessage}</div>}
+
+                        {appState === 'setup' && (
+                            <div className="bg-white p-6 rounded-2xl shadow border text-center animate-fade-in">
+                                <Icon name="BookOpen" size={48} className="mx-auto text-indigo-500 mb-4" />
+                                <h2 className="text-xl font-bold mb-4">学習を開始</h2>
+                                <div className="space-y-4">
+                                    <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-3 rounded-xl border flex justify-center cursor-pointer">
+                                        <Icon name="Upload" className="mr-2" /> データを読込
+                                        <input type="file" onChange={handleImport} className="hidden" />
+                                    </label>
+                                    <button onClick={loadSample} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl flex justify-center">
+                                        <Icon name="FileJson" className="mr-2" /> サンプルで開始
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {appState === 'theme_input' && (
+                            <div className="bg-white p-6 rounded-2xl shadow border animate-fade-in">
+                                <h2 className="font-bold mb-4 flex items-center text-indigo-800"><Icon name="Target" className="mr-2"/>テーマ設定</h2>
+                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 職場のトラブル" className="w-full border-2 p-3 rounded-xl mb-6 outline-none focus:border-indigo-500" />
+                                <button onClick={() => generateQuestion(theme)} disabled={!theme} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl disabled:bg-slate-300">学習開始</button>
+                            </div>
+                        )}
+
+                        {appState === 'loading' && <div className="text-center py-20 animate-pulse"><div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div><p>AI処理中...</p></div>}
+
+                        {appState === 'question' && (
+                            <div className="bg-white p-6 rounded-2xl shadow border animate-fade-in">
+                                <div className="text-xs font-bold bg-indigo-100 text-indigo-800 inline-block px-2 py-1 rounded mb-4">{currentTask.pattern === 'zh-jp' ? '中 ➔ 日' : '日 ➔ 中'}</div>
+                                <div className="mb-6">
+                                    <p className="text-2xl font-bold">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</p>
+                                    {currentTask.pattern === 'zh-jp' && <p className="text-slate-500 mt-2">{currentTask.aiData.pinyin}</p>}
+                                </div>
+                                <textarea value={userAnswer} onChange={e => setUserAnswer(e.target.value)} placeholder="訳を入力..." className="w-full border-2 p-3 h-32 rounded-xl mb-4 outline-none focus:border-indigo-500" />
+                                <button onClick={checkAnswer} className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl">回答送信</button>
+                            </div>
+                        )}
+
+                        {appState === 'feedback' && (
+                            <div className="bg-white p-6 rounded-2xl shadow border animate-fade-in">
+                                <div className="text-center mb-6">
+                                    <Icon name={evaluation.isCorrect ? "CheckCircle" : "XCircle"} size={48} className={evaluation.isCorrect ? "text-green-500 mx-auto" : "text-red-500 mx-auto"} />
+                                    <p className={`text-xl font-bold mt-2 ${evaluation.isCorrect ? "text-green-600" : "text-red-600"}`}>{evaluation.isCorrect ? "正解！" : "惜しい！"}</p>
+                                </div>
+                                <div className="space-y-4 mb-8">
+                                    <div className="bg-indigo-50 p-3 rounded-lg border text-sm"><p className="font-bold text-indigo-800">模範解答</p><p>{evaluation.correctedAnswer}</p></div>
+                                    <div className="bg-amber-50 p-3 rounded-lg border text-sm"><p className="font-bold text-amber-800">フィードバック</p><p>{evaluation.feedback}</p></div>
+                                </div>
+                                <div className="border-t pt-4">
+                                    <p className="text-center text-sm font-bold mb-3">理解度は？</p>
+                                    <div className="flex space-x-1">
+                                        {[1,2,3,4,5].map(l => <button key={l} onClick={() => updateRecord(l)} className="flex-1 py-3 bg-slate-100 rounded-lg font-bold hover:bg-indigo-100 transition-colors">{l}</button>)}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {showSettings && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white p-6 rounded-2xl w-full max-w-sm relative">
+                                <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4"><Icon name="XCircle" className="text-slate-300" /></button>
+                                <h2 className="text-xl font-bold mb-4">設定</h2>
+                                <label className="block text-sm font-bold mb-2">Gemini API Key</label>
+                                <input type="password" value={userApiKey} onChange={e => { setUserApiKey(e.target.value); localStorage.setItem('chineseSrsApiKey', e.target.value); }} className="w-full border p-2 rounded mb-6" placeholder="AIza..." />
+                                <div className="flex space-x-2">
+                                    <button onClick={handleExport} className="flex-1 bg-slate-100 p-2 rounded text-sm font-bold flex justify-center items-center"><Icon name="Download" size={16} className="mr-1" />出力</button>
+                                    <label className="flex-1 bg-indigo-50 p-2 rounded text-sm font-bold text-indigo-700 flex justify-center items-center cursor-pointer"><Icon name="Upload" size={16} className="mr-1" />入力<input type="file" onChange={handleImport} className="hidden" /></label>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <LogWindow logs={logs} showToast={showToast} />
+                </div>
+            );
+        }
+
+            const LogWindow = ({ logs, showToast }) => {
+            const [min, setMin] = useState(true);
+            const [pos, setPos] = useState({ x: window.innerWidth - 340, y: window.innerHeight - 80 });
+            const [isDragging, setIsDragging] = useState(false);
+            const offset = useRef({ x: 0, y: 0 });
+
+            useEffect(() => {
+                const handleMove = (e) => {
+                    if (!isDragging) return;
+                    setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y });
+                };
+                const handleUp = () => setIsDragging(false);
+                window.addEventListener('pointermove', handleMove);
+                window.addEventListener('pointerup', handleUp);
+                return () => { window.removeEventListener('pointermove', handleMove); window.removeEventListener('pointerup', handleUp); };
+            }, [isDragging]);
+
+            return (
+                <div className="fixed z-50 bg-slate-900 text-green-400 font-mono text-[10px] rounded-lg shadow-2xl overflow-hidden flex flex-col border border-slate-700" 
+                    style={{ left: pos.x, top: pos.y, width: '300px', height: min ? '40px' : '200px' }}>
+                    <div className="bg-slate-800 p-2 flex justify-between items-center cursor-move"
+                        onPointerDown={e => { setIsDragging(true); offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }; }}>
+                        <div className="flex items-center"><Icon name="GripHorizontal" size={12} className="mr-1" />System Logs</div>
+                        <div className="flex items-center space-x-2">
+                            <button onClick={() => { 
+                                // iOS Safari compatibility for clipboard
+                                const el = document.createElement('textarea');
+                                el.value = logs.join('\n');
+                                document.body.appendChild(el);
+                                el.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(el);
+                                showToast("コピーしました"); 
+                            }}><Icon name="Copy" size={12}/></button>
+                            <button onClick={() => setMin(!min)}><Icon name={min ? "Maximize2" : "Minimize2"} size={12}/></button>
+                        </div>
+                    </div>
+                    {!min && <div className="p-2 overflow-y-auto flex-1 log-content">{logs.map((l, i) => <div key={i} className="mb-1 border-b border-slate-800 pb-1">{l}</div>)}</div>}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
