@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.1</title>
+    <title>中国語 SRS学習 v1.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -27,6 +27,7 @@
         const { useState, useEffect, useRef, useCallback } = React;
 
         // --- 250個の文法・慣用表現データ (HSK3級以上ベース) ---
+        // ※ループ処理を使わず、250個全てを直接定義しています
         const INITIAL_GRAMMAR_LIST = [
             { id: 1, text: "虽然...但是...", meaning: "～だけれども、しかし～" },
             { id: 2, text: "不仅...而且...", meaning: "～だけでなく、さらに～" },
@@ -48,12 +49,236 @@
             { id: 18, text: "才", meaning: "やっと、～してこそ" },
             { id: 19, text: "就", meaning: "すぐに、まさに" },
             { id: 20, text: "再...也...", meaning: "どんなに～しても" },
-            // 残りを250個になるよう拡張
-            ...Array.from({ length: 230 }, (_, i) => ({
-                id: i + 21,
-                text: `HSK中上級文法/慣用句 ${i + 21}`,
-                meaning: `重要表現の意味 ${i + 21}`
-            }))
+            { id: 21, text: "尽管...可是...", meaning: "～にもかかわらず" },
+            { id: 22, text: "不管...都...", meaning: "～にかかわらず" },
+            { id: 23, text: "除非...否则...", meaning: "～しない限り、さもないと" },
+            { id: 24, text: "是...还是...", meaning: "～か、それとも～か" },
+            { id: 25, text: "既...又...", meaning: "～であり、また～である" },
+            { id: 26, text: "一边...一边...", meaning: "～しながら～する" },
+            { id: 27, text: "一方面...一方面...", meaning: "一方で～、他方で～" },
+            { id: 28, text: "不但不...反而...", meaning: "～どころか、かえって～" },
+            { id: 29, text: "连...带...", meaning: "～やら～やら" },
+            { id: 30, text: "越...越...", meaning: "～すればするほど～" },
+            { id: 31, text: "越发", meaning: "ますます" },
+            { id: 32, text: "不怎么", meaning: "あまり～ない" },
+            { id: 33, text: "差不多", meaning: "だいたい、ほとんど" },
+            { id: 34, text: "差点儿", meaning: "もう少しで～するところだった" },
+            { id: 35, text: "动不动就...", meaning: "ともすれば、すぐに～する" },
+            { id: 36, text: "反正", meaning: "どうせ、いずれにしても" },
+            { id: 37, text: "根本", meaning: "そもそも、全く" },
+            { id: 38, text: "果然", meaning: "果たして、案の定" },
+            { id: 39, text: "忽然", meaning: "突然" },
+            { id: 40, text: "居然", meaning: "意外にも、なんと" },
+            { id: 41, text: "竟然", meaning: "驚いたことに、なんと" },
+            { id: 42, text: "偶尔", meaning: "たまに" },
+            { id: 43, text: "偏偏", meaning: "あいにく、よりによって" },
+            { id: 44, text: "恰巧", meaning: "ちょうど、たまたま" },
+            { id: 45, text: "千万", meaning: "絶対に、くれぐれも" },
+            { id: 46, text: "似乎", meaning: "どうやら～のようだ" },
+            { id: 47, text: "稍微", meaning: "少し、わずかに" },
+            { id: 48, text: "始终", meaning: "始終、ずっと" },
+            { id: 49, text: "顺便", meaning: "ついでに" },
+            { id: 50, text: "随时", meaning: "いつでも" },
+            { id: 51, text: "特意", meaning: "わざわざ" },
+            { id: 52, text: "万万", meaning: "絶対に（～ない）" },
+            { id: 53, text: "未免", meaning: "いささか～きらいがある" },
+            { id: 54, text: "无非", meaning: "～に過ぎない" },
+            { id: 55, text: "幸亏", meaning: "幸いにも" },
+            { id: 56, text: "多亏", meaning: "～のおかげで" },
+            { id: 57, text: "一时", meaning: "一時的に、とっさに" },
+            { id: 58, text: "一向", meaning: "これまでずっと" },
+            { id: 59, text: "再三", meaning: "何度も、再三" },
+            { id: 60, text: "渐渐", meaning: "だんだん、次第に" },
+            { id: 61, text: "逐渐", meaning: "徐々に" },
+            { id: 62, text: "终于", meaning: "ついに、ようやく" },
+            { id: 63, text: "总算", meaning: "どうやら、なんとか" },
+            { id: 64, text: "怪不得", meaning: "道理で、無理もない" },
+            { id: 65, text: "难怪", meaning: "道理で" },
+            { id: 66, text: "巴不得", meaning: "切に願う" },
+            { id: 67, text: "恨不得", meaning: "～したくてたまらない" },
+            { id: 68, text: "说不定", meaning: "もしかしたら～かもしれない" },
+            { id: 69, text: "倒不如", meaning: "いっそ～のほうがよい" },
+            { id: 70, text: "何必", meaning: "なにも～することはない" },
+            { id: 71, text: "何况", meaning: "ましてや、なおさら" },
+            { id: 72, text: "况且", meaning: "その上、おまけに" },
+            { id: 73, text: "反倒", meaning: "かえって、逆に" },
+            { id: 74, text: "反而", meaning: "かえって" },
+            { id: 75, text: "毕竟", meaning: "やはり、何といっても" },
+            { id: 76, text: "到底", meaning: "いったい、とうとう" },
+            { id: 77, text: "究竟", meaning: "いったい（疑問の強調）" },
+            { id: 78, text: "难免", meaning: "避けられない、～しがちである" },
+            { id: 79, text: "免得", meaning: "～しないように" },
+            { id: 80, text: "省得", meaning: "～の手間を省くために" },
+            { id: 81, text: "免不了", meaning: "～を免れない" },
+            { id: 82, text: "只好", meaning: "～するほかない" },
+            { id: 83, text: "不得不", meaning: "～せざるを得ない" },
+            { id: 84, text: "不能不", meaning: "～しないわけにはいかない" },
+            { id: 85, text: "不由得", meaning: "思わず～する" },
+            { id: 86, text: "忍不住", meaning: "こらえきれない" },
+            { id: 87, text: "情不自禁", meaning: "思わず" },
+            { id: 88, text: "说起", meaning: "～と言えば" },
+            { id: 89, text: "提起", meaning: "～の話になると" },
+            { id: 90, text: "谈到", meaning: "～について言えば" },
+            { id: 91, text: "关于", meaning: "～について" },
+            { id: 92, text: "对于", meaning: "～に対して" },
+            { id: 93, text: "至于", meaning: "～に至っては" },
+            { id: 94, text: "向来", meaning: "これまでずっと" },
+            { id: 95, text: "历来", meaning: "従来から" },
+            { id: 96, text: "从来", meaning: "今まで～（ない）" },
+            { id: 97, text: "从来不", meaning: "これまで～したことがない" },
+            { id: 98, text: "从来没", meaning: "今まで～したことがない" },
+            { id: 99, text: "一直", meaning: "ずっと" },
+            { id: 100, text: "一连", meaning: "連続して" },
+            { id: 101, text: "接连", meaning: "立て続けに" },
+            { id: 102, text: "往往", meaning: "往々にして、～しがちだ" },
+            { id: 103, text: "常常", meaning: "よく、しばしば" },
+            { id: 104, text: "平常", meaning: "普段" },
+            { id: 105, text: "通常", meaning: "通常" },
+            { id: 106, text: "多半", meaning: "たぶん、大部分" },
+            { id: 107, text: "大概", meaning: "たぶん" },
+            { id: 108, text: "也许", meaning: "もしかすると" },
+            { id: 109, text: "大约", meaning: "およそ" },
+            { id: 110, text: "差不多", meaning: "だいたい" },
+            { id: 111, text: "简直", meaning: "まるで、まったく" },
+            { id: 112, text: "仿佛", meaning: "あたかも～のようだ" },
+            { id: 113, text: "似乎", meaning: "どうやら" },
+            { id: 114, text: "不如", meaning: "～に越したことはない" },
+            { id: 115, text: "相当于", meaning: "～に相当する" },
+            { id: 116, text: "以...为...", meaning: "～を～とする" },
+            { id: 117, text: "把...当成...", meaning: "～を～と見なす" },
+            { id: 118, text: "对...来说", meaning: "～にとって" },
+            { id: 119, text: "在...看来", meaning: "～から見れば" },
+            { id: 120, text: "据...说", meaning: "～の話によると" },
+            { id: 121, text: "依...看", meaning: "～の考えでは" },
+            { id: 122, text: "凭", meaning: "～に頼って" },
+            { id: 123, text: "趁", meaning: "～のうちに、～の機会に" },
+            { id: 124, text: "乘", meaning: "～に乗じて" },
+            { id: 125, text: "顺", meaning: "～に沿って" },
+            { id: 126, text: "沿", meaning: "～に沿って" },
+            { id: 127, text: "顺着", meaning: "～に沿って、順を追って" },
+            { id: 128, text: "沿着", meaning: "～に沿って" },
+            { id: 129, text: "朝着", meaning: "～に向かって" },
+            { id: 130, text: "向着", meaning: "～に向かって" },
+            { id: 131, text: "冲着", meaning: "～に対して、～を目指して" },
+            { id: 132, text: "为了", meaning: "～のために（目的）" },
+            { id: 133, text: "为的是", meaning: "～するためである" },
+            { id: 134, text: "因为", meaning: "～なので" },
+            { id: 135, text: "因此", meaning: "それゆえに" },
+            { id: 136, text: "因而", meaning: "従って" },
+            { id: 137, text: "从而", meaning: "したがって、その結果" },
+            { id: 138, text: "可见", meaning: "～であることがわかる" },
+            { id: 139, text: "由此可见", meaning: "これによって～であることがわかる" },
+            { id: 140, text: "拿...来说", meaning: "～を例にとると" },
+            { id: 141, text: "以...为例", meaning: "～を例とする" },
+            { id: 142, text: "换句话说", meaning: "言い換えれば" },
+            { id: 143, text: "也就是说", meaning: "すなわち" },
+            { id: 144, text: "总而言之", meaning: "要するに" },
+            { id: 145, text: "总的来说", meaning: "総じて言えば" },
+            { id: 146, text: "不管怎样", meaning: "とにかく" },
+            { id: 147, text: "无论如何", meaning: "どうあっても" },
+            { id: 148, text: "说来说去", meaning: "あれこれ言ったところで" },
+            { id: 149, text: "其实", meaning: "実は" },
+            { id: 150, text: "实际上", meaning: "実際には" },
+            { id: 151, text: "事实上", meaning: "事実上" },
+            { id: 152, text: "本来", meaning: "もともと" },
+            { id: 153, text: "原来", meaning: "元来、なんと～だったのか" },
+            { id: 154, text: "与其说...不如说...", meaning: "～と言うよりはむしろ～だ" },
+            { id: 155, text: "不仅仅", meaning: "ただ～だけでなく" },
+            { id: 156, text: "非但", meaning: "～だけでなく" },
+            { id: 157, text: "不但不", meaning: "～しないばかりか" },
+            { id: 158, text: "哪怕是", meaning: "たとえ～であっても" },
+            { id: 159, text: "即便是", meaning: "たとえ～であっても" },
+            { id: 160, text: "就算", meaning: "たとえ～としても" },
+            { id: 161, text: "别说", meaning: "～は言うまでもなく" },
+            { id: 162, text: "何况是", meaning: "まして～はなおさらだ" },
+            { id: 163, text: "以...为准", meaning: "～を基準とする" },
+            { id: 164, text: "以...为主", meaning: "～を主とする" },
+            { id: 165, text: "以...为中心", meaning: "～を中心として" },
+            { id: 166, text: "以...为前提", meaning: "～を前提として" },
+            { id: 167, text: "以...为荣", meaning: "～を誇りとする" },
+            { id: 168, text: "由...组成", meaning: "～から成る" },
+            { id: 169, text: "由...决定", meaning: "～によって決まる" },
+            { id: 170, text: "归...所有", meaning: "～の所有に帰する" },
+            { id: 171, text: "非...莫属", meaning: "～の他にはない" },
+            { id: 172, text: "无从", meaning: "～するすべがない" },
+            { id: 173, text: "无不", meaning: "～しないものはない" },
+            { id: 174, text: "无非是", meaning: "～にほかならない" },
+            { id: 175, text: "何尝", meaning: "いつ～したか（いや、していない）" },
+            { id: 176, text: "何不", meaning: "～してはいかがか" },
+            { id: 177, text: "不妨", meaning: "～しても構わない" },
+            { id: 178, text: "不免", meaning: "どうしても～してしまう" },
+            { id: 179, text: "不外乎", meaning: "～に尽きる" },
+            { id: 180, text: "不如说", meaning: "むしろ～と言ったほうがいい" },
+            { id: 181, text: "要不然", meaning: "さもなければ" },
+            { id: 182, text: "不然", meaning: "そうでないと" },
+            { id: 183, text: "否则", meaning: "さもなければ" },
+            { id: 184, text: "再不...就...", meaning: "早く～しないと～になる" },
+            { id: 185, text: "与其...倒不如...", meaning: "～するくらいならいっそ～" },
+            { id: 186, text: "宁肯...也不...", meaning: "たとえ～しても～しない" },
+            { id: 187, text: "即使...也罢", meaning: "たとえ～でも（構わない）" },
+            { id: 188, text: "哪怕...也好", meaning: "たとえ～でも（いい）" },
+            { id: 189, text: "不论...都...", meaning: "～にかかわらず～だ" },
+            { id: 190, text: "任凭...也...", meaning: "どんなに～でも" },
+            { id: 191, text: "不管三七二十一", meaning: "四の五の言わずに" },
+            { id: 192, text: "说到底", meaning: "結局のところ" },
+            { id: 193, text: "说白了", meaning: "率直に言えば" },
+            { id: 194, text: "说到这里", meaning: "ここまできて" },
+            { id: 195, text: "在...情况下", meaning: "～の状況下で" },
+            { id: 196, text: "在...过程中", meaning: "～の過程で" },
+            { id: 197, text: "在...基础上", meaning: "～の基礎の上に" },
+            { id: 198, text: "从...角度来看", meaning: "～の角度から見ると" },
+            { id: 199, text: "从...出发", meaning: "～から出発して" },
+            { id: 200, text: "到...为止", meaning: "～に至るまで" },
+            { id: 201, text: "自...以来", meaning: "～以来" },
+            { id: 202, text: "打...起", meaning: "～から" },
+            { id: 203, text: "非但...反而...", meaning: "～ばかりか、かえって" },
+            { id: 204, text: "非但...甚至...", meaning: "～ばかりか、ひいては" },
+            { id: 205, text: "不仅仅是...更...", meaning: "～だけでなく、さらに～" },
+            { id: 206, text: "不仅不...反而...", meaning: "～しないだけでなく、かえって" },
+            { id: 207, text: "别说...连...都...", meaning: "～は言うまでもなく、～でさえ" },
+            { id: 208, text: "慢说...就是...也...", meaning: "～はおろか、～でさえ" },
+            { id: 209, text: "哪怕...也是...", meaning: "たとえ～でも～だ" },
+            { id: 210, text: "即若...也...", meaning: "もし～だとしても" },
+            { id: 211, text: "假如...就...", meaning: "もし～ならば" },
+            { id: 212, text: "假使...便...", meaning: "もし～なら" },
+            { id: 213, text: "倘若...就...", meaning: "もし～ならば" },
+            { id: 214, text: "要是...的话", meaning: "もし～なら" },
+            { id: 215, text: "万一...就...", meaning: "万一～なら" },
+            { id: 216, text: "一旦...就...", meaning: "ひとたび～すれば" },
+            { id: 217, text: "只有在...时才...", meaning: "～の時に限り～" },
+            { id: 218, text: "除非...才...", meaning: "～してはじめて～" },
+            { id: 219, text: "既然如此", meaning: "そうである以上" },
+            { id: 220, text: "照理说", meaning: "理屈から言えば" },
+            { id: 221, text: "按理说", meaning: "筋から言えば" },
+            { id: 222, text: "顾名思义", meaning: "名が体を表すように" },
+            { id: 223, text: "可想而知", meaning: "推して知るべし" },
+            { id: 224, text: "由此可见", meaning: "これから見ると" },
+            { id: 225, text: "显而易见", meaning: "明らかである" },
+            { id: 226, text: "毫无疑问", meaning: "疑いなく" },
+            { id: 227, text: "不言而喻", meaning: "言うまでもない" },
+            { id: 228, text: "众所周知", meaning: "周知の通り" },
+            { id: 229, text: "总的来看", meaning: "全体的に見ると" },
+            { id: 230, text: "从整体上看", meaning: "全体から見れば" },
+            { id: 231, text: "相对而言", meaning: "相対的に言えば" },
+            { id: 232, text: "就...而言", meaning: "～について言えば" },
+            { id: 233, text: "以至", meaning: "その結果" },
+            { id: 234, text: "致使", meaning: "～をもたらす" },
+            { id: 235, text: "惹得", meaning: "～を引き起こす" },
+            { id: 236, text: "导致", meaning: "～を招く" },
+            { id: 237, text: "以期", meaning: "～を期する" },
+            { id: 238, text: "为的是", meaning: "～するためだ" },
+            { id: 239, text: "图的是", meaning: "～を狙っている" },
+            { id: 240, text: "与其...不如说...", meaning: "～というよりは" },
+            { id: 241, text: "非...即...", meaning: "～でなければ～だ" },
+            { id: 242, text: "要么...要么...", meaning: "～か、それとも～か" },
+            { id: 243, text: "或者...或者...", meaning: "あるいは～、あるいは～" },
+            { id: 244, text: "无所谓", meaning: "どうでもいい、気にしない" },
+            { id: 245, text: "不在乎", meaning: "気にしない" },
+            { id: 246, text: "大不了", meaning: "せいぜい、たかだか" },
+            { id: 247, text: "不见得", meaning: "必ずしも～とは限らない" },
+            { id: 248, text: "说不定", meaning: "ひょっとすると" },
+            { id: 249, text: "没准儿", meaning: "もしかすると" },
+            { id: 250, text: "无论如何也...", meaning: "どうやっても～" }
         ];
 
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -147,10 +372,8 @@
                 addLog("システム: アプリケーション初期化中...");
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
-                // 初期画面（setup）でユーザーに読み込みか新規かを確認させるため、ここでは自動ロードしない
             }, [addLog]);
 
-            // 理解度入力などでlearningDataが更新されたら、自動的にローカルストレージに保存
             useEffect(() => {
                 if (learningData.length > 0) {
                     localStorage.setItem('srs_local_save', JSON.stringify(learningData));
@@ -158,7 +381,6 @@
                 }
             }, [learningData, addLog]);
 
-            // --- ファイル関連操作 ---
             const handleImport = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -174,7 +396,7 @@
                     } catch (err) { alert("無効なファイルです"); addLog("エラー: インポート失敗"); }
                 };
                 reader.readAsText(file);
-                e.target.value = ''; // 連続で同じファイルを読み込めるようリセット
+                e.target.value = '';
             };
 
             const handleExport = () => {
@@ -192,7 +414,6 @@
                 addLog(`システム: 学習データを ${storageName} としてファイル出力しました。`);
             };
 
-            // 新規セットアップ
             const initFromDefault = () => {
                 addLog("システム: 新規学習データを作成します。");
                 const initial = INITIAL_GRAMMAR_LIST.map(g => ({
@@ -220,12 +441,10 @@
                         const d = item.patterns[p];
                         let score = 0;
                         if (!d.lastStudied) {
-                            // 未学習のものを優先。ランダム要素を加えて同じものが続かないように
                             score = 1000000 + Math.random();
                         } else {
-                            // 経過時間と理解度レベルに基づくスコア
                             const hours = (now - d.lastStudied) / (1000 * 60 * 60);
-                            const interval = Math.pow(d.level, 2) * 12; // 理解度が高いほど間隔が開く
+                            const interval = Math.pow(d.level, 2) * 12;
                             score = hours / interval;
                         }
                         if (score > bestScore) {
@@ -280,7 +499,6 @@
 
             const finishLesson = (lvl) => {
                 addLog(`システム: 理解度 ${lvl} を記録`);
-                // データを更新。useEffectによりこの後自動的にローカルストレージへ保存される
                 const nextData = learningData.map(item => {
                     if (item.id === currentTask.item.id) {
                         const p = currentTask.pattern;
@@ -307,7 +525,7 @@
             return (
                 <div className="min-h-screen flex flex-col pb-16">
                     <header className="bg-indigo-700 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-10">
-                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.1</span></div>
+                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.2</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-600 rounded-full hover:bg-indigo-500 transition-colors shadow-sm">
                             <Icon name="Settings" />
                         </button>
@@ -373,6 +591,11 @@
                                     <h3 className="text-xl font-bold">{evaluation.isCorrect ? '正解！' : '不正解'}</h3>
                                 </div>
                                 <div className="space-y-4 text-sm">
+                                    <div className="bg-slate-50 p-4 rounded-lg">
+                                        <p className="font-bold text-slate-400 mb-1">出題された問題</p>
+                                        <p className="text-lg font-bold">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</p>
+                                        {currentTask.pattern === 'zh-jp' && <p className="text-indigo-400 font-mono text-sm">{currentTask.aiData.pinyin}</p>}
+                                    </div>
                                     <div className="bg-slate-50 p-4 rounded-lg"><p className="font-bold text-slate-400 mb-1">模範解答</p><p className="text-lg font-bold">{evaluation.modelAnswer}</p></div>
                                     <div className="bg-amber-50 p-4 rounded-lg"><p className="font-bold text-amber-600 mb-1">フィードバックポイント</p><p>{evaluation.feedback}</p></div>
                                     <div className="bg-indigo-50 p-4 rounded-lg"><p className="font-bold text-indigo-600 mb-1">文法の解説</p><p>{currentTask.aiData.explanation}</p></div>
@@ -394,7 +617,6 @@
                         {appState !== 'setup' ? `File: ${storageName}` : 'No file loaded'} | Model: Gemini-2.5-Flash
                     </footer>
 
-                    {/* 設定・ファイル操作モーダル */}
                     {showSettings && (
                         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
                             <div className="bg-white p-6 rounded-3xl w-full max-w-sm shadow-2xl relative animate-fade-in">
