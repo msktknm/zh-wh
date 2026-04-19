@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.7</title>
+    <title>中国語 SRS学習 v1.8</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -12,12 +12,29 @@
     <style>
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        body { 
+            -webkit-tap-highlight-color: transparent; 
+            overscroll-behavior-y: none; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ログウィンドウ用スタイル */
+        .log-window {
+            touch-action: none; /* バックグラウンドへのスクロール伝播を防止 */
+            overscroll-behavior: contain;
+        }
+        .log-content {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
         .log-content::-webkit-scrollbar { width: 4px; }
         .log-content::-webkit-scrollbar-track { background: #1a1a1a; }
         .log-content::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
-        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
         .no-select { user-select: none; -webkit-user-select: none; }
-        .drag-handle { touch-action: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -169,7 +186,7 @@
             { id: 139, text: "由此可见", meaning: "これによって～であることがわかる" },
             { id: 140, text: "拿...来说", meaning: "～を例にとると" },
             { id: 141, text: "以...为例", meaning: "～を例とする" },
-            { id: 142, text: "换句话说", meaning: "言い換えれば" },
+            { id: 142, text: "換句话说", meaning: "言い換えれば" },
             { id: 143, text: "也就是说", meaning: "すなわち" },
             { id: 144, text: "总而言之", meaning: "要するに" },
             { id: 145, text: "总的来说", meaning: "総じて言えば" },
@@ -328,7 +345,7 @@
         function App() {
             const [appState, setAppState] = useState('setup');
             const [theme, setTheme] = useState('');
-            const [learningData, setLearningData] = useState([]); // 250文法全体の最新状態
+            const [learningData, setLearningData] = useState([]); // 250文法全体
             const [feedbackHistory, setFeedbackHistory] = useState([]); // 追記型フィードバック
             const [currentTask, setCurrentTask] = useState(null);
             const [userAnswer, setUserAnswer] = useState('');
@@ -345,12 +362,11 @@
             }, []);
 
             useEffect(() => {
-                addLog("システム: アプリケーション起動 v1.7");
+                addLog("システム: アプリケーション起動 v1.8");
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
             }, [addLog]);
 
-            // --- AI Logic with Fallback ---
             const callAIWithFallback = async (prompt, key, isJson = true) => {
                 const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-3-flash-preview"];
                 for (let i = 0; i < models.length; i++) {
@@ -378,7 +394,6 @@
                 }
             };
 
-            // --- Handlers ---
             const handleImport = (e) => {
                 const file = e.target.files[0]; if (!file) return;
                 setStorageName(file.name);
@@ -455,7 +470,6 @@
             const finishLesson = (lvl) => {
                 addLog(`システム: 理解度 ${lvl} で更新。`);
                 
-                // フィードバック履歴への純粋な追記（250例文とは無関係に増えていく）
                 const newFeedback = {
                     date: new Date().toLocaleString(),
                     topic: theme,
@@ -468,7 +482,6 @@
                 };
                 setFeedbackHistory(prev => [...prev, newFeedback]);
 
-                // 学習データの更新 (250個全体の状態)
                 const nextData = learningData.map(item => {
                     if (item.id === currentTask.item.id) {
                         const p = currentTask.pattern;
@@ -490,7 +503,7 @@
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.7</span></div>
+                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.8</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full active:scale-90 transition-all"><Icon name="Settings" /></button>
                     </header>
 
@@ -515,7 +528,7 @@
                         {appState === 'theme_input' && (
                             <div className="bg-white p-6 rounded-3xl shadow-sm border mt-6 animate-fade-in">
                                 <h2 className="font-bold mb-4 flex items-center gap-2 text-indigo-600"><Icon name="Target" size={18}/> 今日のテーマ</h2>
-                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 技術的トラブル" className="w-full border-2 p-4 rounded-2xl mb-4 bg-slate-50 outline-none" />
+                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 職場の技術的トラブル" className="w-full border-2 p-4 rounded-2xl mb-4 bg-slate-50 outline-none" />
                                 <button onClick={startLesson} disabled={!theme} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform disabled:bg-slate-300">学習開始</button>
                             </div>
                         )}
@@ -560,15 +573,15 @@
 
                         {appState === 'save_prompt' && (
                             <div className="bg-white p-6 rounded-3xl shadow-sm border mt-6 animate-fade-in text-center space-y-4">
-                                <h2 className="font-bold">学習終了</h2>
-                                <button onClick={() => saveFile(JSON.stringify(learningData, null, 2), storageName)} className="w-full py-4 bg-indigo-50 text-indigo-700 font-bold rounded-2xl border border-indigo-100 flex justify-center items-center"><Icon name="Save" className="mr-2" size={16}/> 学習結果を保存</button>
-                                <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="w-full py-4 bg-emerald-50 text-emerald-700 font-bold rounded-2xl border border-emerald-100 flex justify-center items-center"><Icon name="Download" className="mr-2" size={16}/> フィードバック追記保存</button>
-                                <button onClick={() => setAppState('theme_input')} className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl flex justify-center items-center"><Icon name="Home" className="mr-2" size={16}/> テーマ入力へ戻る</button>
+                                <h2 className="font-bold text-lg">学習を終了して保存しますか？</h2>
+                                <button onClick={() => saveFile(JSON.stringify(learningData, null, 2), storageName)} className="w-full py-4 bg-indigo-50 text-indigo-700 font-bold rounded-2xl border border-indigo-100 flex justify-center items-center"><Icon name="Save" className="mr-2" size={16}/> 学習結果データを保存</button>
+                                <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="w-full py-4 bg-emerald-50 text-emerald-700 font-bold rounded-2xl border border-emerald-100 flex justify-center items-center"><Icon name="Download" className="mr-2" size={16}/> フィードバック履歴を保存</button>
+                                <button onClick={() => setAppState('theme_input')} className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl flex justify-center items-center"><Icon name="Home" className="mr-2" size={16}/> 保存せずにテーマ入力へ戻る</button>
                             </div>
                         )}
                     </main>
 
-                    <footer className="fixed bottom-0 w-full bg-white border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
+                    <footer className="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
                         <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini-2.5-Flash</span>
                     </footer>
@@ -576,21 +589,30 @@
                     {showSettings && (
                         <div className="fixed inset-0 bg-slate-900/70 z-[100] flex items-center justify-center p-4 backdrop-blur">
                             <div className="bg-white p-6 rounded-[2rem] w-full max-w-md shadow-2xl relative">
-                                <button onClick={() => setShowSettings(false)} className="absolute top-6 right-6 text-slate-400"><Icon name="X" size={20}/></button>
+                                <button onClick={() => setShowSettings(false)} className="absolute top-6 right-6 text-slate-400 p-2"><Icon name="X" size={20}/></button>
                                 <h2 className="font-black text-xl mb-6 flex items-center"><Icon name="Settings" className="mr-2 text-indigo-600" /> 設定管理</h2>
                                 <div className="space-y-6">
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">API KEY</label>
                                         <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500 text-sm mb-2" />
-                                        <button onClick={() => { localStorage.setItem('srs_gemini_key', apiKey); setShowSettings(false); addLog("システム: キー保存。"); }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs">保存</button>
+                                        <button onClick={() => { localStorage.setItem('srs_gemini_key', apiKey); setShowSettings(false); addLog("システム: キーを保存しました。"); }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs">APIキー保存</button>
                                     </div>
-                                    <div className="space-y-2">
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">フィードバック履歴 ({feedbackHistory.length}件)</p>
-                                        <label className="w-full py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border-2 border-dashed border-indigo-200 flex justify-center items-center cursor-pointer text-xs">
-                                            履歴ファイル読み込み（追記用）
+                                    <div className="space-y-2 border-t pt-4">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">データの保存・読み込み</p>
+                                        
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => saveFile(JSON.stringify(learningData, null, 2), storageName)} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl text-[11px] flex items-center justify-center gap-1">
+                                                <Icon name="Save" size={12}/> 学習データ保存
+                                            </button>
+                                            <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="flex-1 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl text-[11px] flex items-center justify-center gap-1">
+                                                <Icon name="Download" size={12}/> 履歴保存
+                                            </button>
+                                        </div>
+
+                                        <label className="w-full py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border-2 border-dashed border-indigo-200 flex justify-center items-center cursor-pointer text-[11px] mt-2">
+                                            履歴ファイル読込（追記用）
                                             <input type="file" onChange={handleImportFeedback} className="hidden" accept=".json" />
                                         </label>
-                                        <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">現在の履歴を名前を付けて保存</button>
                                     </div>
                                 </div>
                             </div>
@@ -613,35 +635,75 @@
             useEffect(() => { if (!min && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [logs, min]);
 
             const onPointerMove = useCallback((e) => {
-                if (isDragging) setPos({ x: e.clientX - dragRef.current.x, y: e.clientY - dragRef.current.y });
-                else if (isResizing) setSize({ w: Math.max(200, dragRef.current.w + (e.clientX - dragRef.current.x)), h: Math.max(100, dragRef.current.h + (e.clientY - dragRef.current.y)) });
+                if (isDragging) {
+                    setPos({ x: e.clientX - dragRef.current.x, y: e.clientY - dragRef.current.y });
+                } else if (isResizing) {
+                    setSize({ 
+                        w: Math.max(200, dragRef.current.w + (e.clientX - dragRef.current.x)), 
+                        h: Math.max(100, dragRef.current.h + (e.clientY - dragRef.current.y)) 
+                    });
+                }
             }, [isDragging, isResizing]);
 
             useEffect(() => {
                 if (isDragging || isResizing) {
                     window.addEventListener('pointermove', onPointerMove);
-                    window.addEventListener('pointerup', () => { setIsDragging(false); setIsResizing(false); });
+                    const stop = () => { setIsDragging(false); setIsResizing(false); };
+                    window.addEventListener('pointerup', stop);
+                    return () => { window.removeEventListener('pointermove', onPointerMove); window.removeEventListener('pointerup', stop); };
                 }
-                return () => { window.removeEventListener('pointermove', onPointerMove); };
             }, [isDragging, isResizing, onPointerMove]);
 
             return (
-                <div className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[9px] shadow-2xl flex flex-col border border-slate-700 rounded-xl overflow-hidden"
-                    style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: `${size.w}px`, height: min ? '36px' : `${size.h}px` }}>
-                    <div className="bg-slate-800 p-2 flex justify-between items-center cursor-move" 
-                        onPointerDown={(e) => { e.preventDefault(); setIsDragging(true); dragRef.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }; }}>
+                <div 
+                    className="log-window fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[9px] shadow-2xl flex flex-col border border-slate-700 rounded-xl overflow-hidden shadow-black/50"
+                    style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: `${size.w}px`, height: min ? '36px' : `${size.h}px` }}
+                >
+                    <div 
+                        className="bg-slate-800 p-2 flex justify-between items-center cursor-move select-none" 
+                        onPointerDown={(e) => { 
+                            e.preventDefault(); 
+                            setIsDragging(true); 
+                            dragRef.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }; 
+                        }}
+                    >
                         <span className="opacity-70 flex items-center gap-1"><Icon name="Terminal" size={12}/> LOG</span>
                         <div className="flex gap-2">
-                            {!min && <button onClick={() => { const text = logs.join('\n'); const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); }}><Icon name="Copy" size={12}/></button>}
+                            {!min && (
+                                <button onClick={() => { 
+                                    const text = logs.join('\n'); 
+                                    const el = document.createElement('textarea'); 
+                                    el.value = text; 
+                                    document.body.appendChild(el); 
+                                    el.select(); 
+                                    document.execCommand('copy'); 
+                                    document.body.removeChild(el); 
+                                }}>
+                                    <Icon name="Copy" size={12}/>
+                                </button>
+                            )}
                             <button onClick={(e) => { e.stopPropagation(); setMin(!min); }}><Icon name={min ? "ChevronUp" : "ChevronDown"} size={14}/></button>
                         </div>
                     </div>
                     {!min && (
                         <>
-                            <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 space-y-1 bg-black/50 select-text">
+                            <div 
+                                ref={scrollRef} 
+                                className="log-content flex-1 overflow-y-auto p-2 space-y-1 bg-black/50 select-text"
+                                onTouchStart={e => e.stopPropagation()} /* バックグラウンドへのスクロール伝播防止 */
+                            >
                                 {logs.map((l, i) => <div key={i}>{l}</div>)}
                             </div>
-                            <div className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize" onPointerDown={(e) => { e.preventDefault(); setIsResizing(true); dragRef.current = { x: e.clientX, y: e.clientY, w: size.w, h: size.h }; }}></div>
+                            <div 
+                                className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize bg-slate-700/50 rounded-tl-lg flex items-center justify-center" 
+                                onPointerDown={(e) => { 
+                                    e.preventDefault(); 
+                                    setIsResizing(true); 
+                                    dragRef.current = { x: e.clientX, y: e.clientY, w: size.w, h: size.h }; 
+                                }}
+                            >
+                                <div className="w-1.5 h-1.5 border-r-2 border-b-2 border-slate-400"></div>
+                            </div>
                         </>
                     )}
                 </div>
