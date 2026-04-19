@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.9</title>
+    <title>中国語 SRS学習 v1.10</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -64,7 +64,7 @@
             { id: 18, text: "才", meaning: "やっと、～してこそ" },
             { id: 19, text: "就", meaning: "すぐに、まさに" },
             { id: 20, text: "再...也...", meaning: "どんなに～しても" },
-            { id: 21, text: "儘管...可是...", meaning: "～にもかかわらず" },
+            { id: 21, text: "尽管...可是...", meaning: "～にもかかわらず" },
             { id: 22, text: "不管...都...", meaning: "～にかかわらず" },
             { id: 23, text: "除非...否则...", meaning: "～しない限り、さもないと" },
             { id: 24, text: "是...还是...", meaning: "～か、それとも～か" },
@@ -143,7 +143,7 @@
             { id: 97, text: "从来不", meaning: "これまで～したことがない" },
             { id: 98, text: "从来没", meaning: "今まで～したことがない" },
             { id: 99, text: "一直", meaning: "ずっと" },
-            { id: 100, text: "一连", meaning: "連続して" },
+            { id: 100, text: "一连", meaning: "连续して" },
             { id: 101, text: "接连", meaning: "立て続けに" },
             { id: 102, text: "往往", meaning: "往々にして、～しがちだ" },
             { id: 103, text: "常常", meaning: "よく、しばしば" },
@@ -185,7 +185,7 @@
             { id: 139, text: "由此可见", meaning: "これによって～であることがわかる" },
             { id: 140, text: "拿...来说", meaning: "～を例にとると" },
             { id: 141, text: "以...为例", meaning: "～を例とする" },
-            { id: 142, text: "換句话说", meaning: "言い換えれば" },
+            { id: 142, text: "换句话说", meaning: "言い換えれば" },
             { id: 143, text: "也就是说", meaning: "すなわち" },
             { id: 144, text: "总而言之", meaning: "要するに" },
             { id: 145, text: "总的来说", meaning: "総じて言えば" },
@@ -212,7 +212,7 @@
             { id: 166, text: "以...为前提", meaning: "～を前提として" },
             { id: 167, text: "以...为荣", meaning: "～を誇りとする" },
             { id: 168, text: "由...组成", meaning: "～から成る" },
-            { id: 169, text: "由...決定", meaning: "～によって決まる" },
+            { id: 169, text: "由...决定", meaning: "～によって決まる" },
             { id: 170, text: "归...所有", meaning: "～の所有に帰する" },
             { id: 171, text: "非...莫属", meaning: "～の他にはない" },
             { id: 172, text: "无从", meaning: "～するすべがない" },
@@ -265,7 +265,7 @@
             { id: 219, text: "既然如此", meaning: "そうである以上" },
             { id: 220, text: "照理说", meaning: "理屈から言えば" },
             { id: 221, text: "按理说", meaning: "筋から言えば" },
-            { id: 222, text: "顾名思義", meaning: "名が体を表すように" },
+            { id: 222, text: "顾名思义", meaning: "名が体を表すように" },
             { id: 223, text: "可想而知", meaning: "推して知るべし" },
             { id: 224, text: "由此可见", meaning: "これから見ると" },
             { id: 225, text: "显而易见", meaning: "明らかである" },
@@ -296,7 +296,7 @@
             { id: 250, text: "无论如何也...", meaning: "どうやっても～" }
         ];
 
-        // --- Helper: ファイル保存 ---
+        // --- Helper: 学習データ保存 ---
         const saveFile = async (content, defaultName) => {
             try {
                 if (window.showSaveFilePicker) {
@@ -310,6 +310,49 @@
                     return handle.name;
                 } else {
                     const blob = new Blob([content], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = defaultName; a.click();
+                    URL.revokeObjectURL(url);
+                    return defaultName;
+                }
+            } catch (e) { return null; }
+        };
+
+        // --- Helper: フィードバック履歴保存 (追記) ---
+        const saveFeedbackFile = async (newEntries, defaultName) => {
+            try {
+                if (window.showSaveFilePicker) {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: defaultName,
+                        types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+                    });
+                    
+                    // 既存の内容を読み込む
+                    let existingData = [];
+                    try {
+                        const file = await handle.getFile();
+                        const text = await file.text();
+                        if (text) {
+                            const parsed = JSON.parse(text);
+                            if (Array.isArray(parsed)) {
+                                existingData = parsed;
+                            }
+                        }
+                    } catch (e) {
+                        // 新規ファイルなどの場合は無視
+                    }
+                    
+                    // 今回の履歴を結合
+                    const combinedData = [...existingData, ...newEntries];
+
+                    const writable = await handle.createWritable();
+                    await writable.write(JSON.stringify(combinedData, null, 2));
+                    await writable.close();
+                    return handle.name;
+                } else {
+                    // FileSystem Access API が使えない環境（iPhoneのSafariなど）では追記できないため、そのままダウンロード
+                    const blob = new Blob([JSON.stringify(newEntries, null, 2)], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url; a.download = defaultName; a.click();
@@ -362,7 +405,7 @@
             useEffect(() => {
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
-                addLog("システム: v1.9 起動。");
+                addLog("システム: v1.10 起動。");
             }, [addLog]);
 
             const callAIWithFallback = async (prompt, key, isJson = true) => {
@@ -386,7 +429,8 @@
                         });
 
                         if (response.status === 429) {
-                            addLog(`[警告]: ${modelId} レートリミット (429) に達しました。`);
+                            const errBody = await response.text().catch(() => "読込不可");
+                            addLog(`[警告]: ${modelId} レートリミット (429)。レスポンス: ${errBody}`);
                             if (i === models.length - 1) {
                                 throw new Error("全モデルのレートリミットに達しました。しばらく時間をおいてください。");
                             }
@@ -426,21 +470,6 @@
                         addLog(`読込成功: ${file.name}`); 
                         if(showSettings) setShowSettings(false);
                     } catch (err) { addLog("エラー: ファイルの解析に失敗しました。JSON形式を確認してください。"); }
-                };
-                reader.readAsText(file); e.target.value = '';
-            };
-
-            const handleImportFeedback = (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        if (Array.isArray(data)) { 
-                            setFeedbackHistory(data); 
-                            addLog(`履歴読込: ${data.length}件を読み込みました。`); 
-                        }
-                    } catch (err) { addLog("エラー: フィードバック履歴の解析に失敗しました。"); }
                 };
                 reader.readAsText(file); e.target.value = '';
             };
@@ -550,7 +579,7 @@
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.9</span></div>
+                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.10</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full active:scale-90 transition-all"><Icon name="Settings" /></button>
                     </header>
 
@@ -604,9 +633,10 @@
                                     <h3 className="text-xl font-bold mt-2">{evaluation.isCorrect ? '正解！' : '不正解'}</h3>
                                 </div>
                                 <div className="space-y-3 text-sm">
-                                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100"><strong>模範:</strong> {evaluation.modelAnswer}</div>
-                                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100"><strong>指摘:</strong> {evaluation.feedback}</div>
-                                    <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100"><strong>解説:</strong> {currentTask.aiData.explanation}</div>
+                                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200"><strong>問題の例文:</strong> {currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</div>
+                                    <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100"><strong>模範解答:</strong> {evaluation.modelAnswer}</div>
+                                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100"><strong>フィードバックポイント:</strong> {evaluation.feedback}</div>
+                                    <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100"><strong>文法の解説:</strong> {currentTask.aiData.explanation}</div>
                                 </div>
                                 {appState === 'result' ? (
                                     <div className="pt-4 border-t">
@@ -628,7 +658,7 @@
                             <div className="bg-white p-6 rounded-3xl shadow-sm border mt-6 animate-fade-in text-center space-y-4">
                                 <h2 className="font-bold text-lg">学習を終了しました</h2>
                                 <button onClick={() => saveFile(JSON.stringify(learningData, null, 2), storageName)} className="w-full py-4 bg-indigo-50 text-indigo-700 font-bold rounded-2xl border border-indigo-100 flex justify-center items-center"><Icon name="Save" className="mr-2" size={16}/> 学習結果データを保存</button>
-                                <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="w-full py-4 bg-emerald-50 text-emerald-700 font-bold rounded-2xl border border-emerald-100 flex justify-center items-center"><Icon name="Download" className="mr-2" size={16}/> 履歴を保存</button>
+                                <button onClick={() => saveFeedbackFile(feedbackHistory, 'feedback_history.json')} className="w-full py-4 bg-emerald-50 text-emerald-700 font-bold rounded-2xl border border-emerald-100 flex justify-center items-center"><Icon name="Download" className="mr-2" size={16}/> 履歴を保存</button>
                                 <button onClick={() => setAppState('theme_input')} className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl flex justify-center items-center active:bg-black"><Icon name="Home" className="mr-2" size={16}/> 保存せずにTOPへ</button>
                             </div>
                         )}
@@ -636,7 +666,7 @@
 
                     <footer className="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
-                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.9)</span>
+                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.10)</span>
                     </footer>
 
                     {showSettings && (
@@ -646,9 +676,9 @@
                                 <h2 className="font-black text-xl mb-6 flex items-center"><Icon name="Settings" className="mr-2 text-indigo-600" /> 設定管理</h2>
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Gemini API KEY</label>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">API KEY</label>
                                         <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500 text-sm mb-2" />
-                                        <button onClick={() => { localStorage.setItem('srs_gemini_key', apiKey); addLog("APIキーをブラウザに保存しました。"); }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs">APIキー保存</button>
+                                        <button onClick={() => { localStorage.setItem('srs_gemini_key', apiKey); setShowSettings(false); addLog("システム: キー保存。"); }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs">保存</button>
                                     </div>
                                     <div className="space-y-2 border-t pt-4">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">データのインポート/エクスポート</p>
@@ -663,14 +693,10 @@
                                             </label>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="py-3 bg-slate-100 text-slate-700 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1">
-                                                <Icon name="Download" size={12}/> 履歴エクスポート
+                                        <div className="grid grid-cols-1 gap-2 mt-2">
+                                            <button onClick={() => saveFeedbackFile(feedbackHistory, 'feedback_history.json')} className="py-3 bg-slate-100 text-slate-700 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1">
+                                                <Icon name="Download" size={12}/> フィードバック履歴エクスポート
                                             </button>
-                                            <label className="py-3 bg-emerald-100 text-emerald-700 font-bold rounded-xl text-[10px] flex items-center justify-center gap-1 cursor-pointer">
-                                                <Icon name="Upload" size={12}/> 履歴インポート
-                                                <input type="file" onChange={handleImportFeedback} className="hidden" accept=".json" />
-                                            </label>
                                         </div>
                                     </div>
                                 </div>
