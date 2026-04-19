@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.6</title>
+    <title>中国語 SRS学習 v1.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -26,7 +26,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- 250個の文法・慣用表現データ (ループを用いず全てコードに埋め込み) ---
+        // --- 250個の文法・慣用表現データ ---
         const INITIAL_GRAMMAR_LIST = [
             { id: 1, text: "虽然...但是...", meaning: "～だけれども、しかし～" },
             { id: 2, text: "不仅...而且...", meaning: "～だけでなく、さらに～" },
@@ -84,7 +84,7 @@
             { id: 54, text: "无非", meaning: "～に過ぎない" },
             { id: 55, text: "幸亏", meaning: "幸いにも" },
             { id: 56, text: "多亏", meaning: "～のおかげで" },
-            { id: 57, text: "一时", meaning: "一時的に、とっさに" },
+            { id: 57, text: "一時", meaning: "一時的に、とっさに" },
             { id: 58, text: "一向", meaning: "これまでずっと" },
             { id: 59, text: "再三", meaning: "何度も、再三" },
             { id: 60, text: "渐渐", meaning: "だんだん、次第に" },
@@ -249,7 +249,7 @@
             { id: 219, text: "既然如此", meaning: "そうである以上" },
             { id: 220, text: "照理说", meaning: "理屈から言えば" },
             { id: 221, text: "按理说", meaning: "筋から言えば" },
-            { id: 222, text: "顾名思义", meaning: "名が体を表すように" },
+            { id: 222, text: "顾名思義", meaning: "名が体を表すように" },
             { id: 223, text: "可想而知", meaning: "推して知るべし" },
             { id: 224, text: "由此可见", meaning: "これから見ると" },
             { id: 225, text: "显而易见", meaning: "明らかである" },
@@ -280,30 +280,7 @@
             { id: 250, text: "无论如何也...", meaning: "どうやっても～" }
         ];
 
-        // --- 共通コンポーネント ---
-        const Icon = ({ name, size = 20, className = "" }) => {
-            const iconRef = useRef(null);
-            useEffect(() => {
-                if (window.lucide && iconRef.current) {
-                    iconRef.current.innerHTML = '';
-                    const iconName = name.charAt(0).toLowerCase() + name.slice(1).replace(/([A-Z])/g, '-$1').toLowerCase();
-                    const icon = document.createElement('i');
-                    icon.setAttribute('data-lucide', iconName);
-                    icon.style.width = `${size}px`;
-                    icon.style.height = `${size}px`;
-                    if (className) icon.className = className;
-                    iconRef.current.appendChild(icon);
-                    window.lucide.createIcons({
-                        attrs: { strokeWidth: 2, width: size, height: size },
-                        nameAttr: 'data-lucide',
-                        icons: window.lucide.icons
-                    });
-                }
-            }, [name, size, className]);
-            return <span ref={iconRef} className="inline-flex items-center justify-center"></span>;
-        };
-
-        // --- ファイル保存ヘルパー ---
+        // --- Helper: ファイル保存 ---
         const saveFile = async (content, defaultName) => {
             try {
                 if (window.showSaveFilePicker) {
@@ -319,24 +296,40 @@
                     const blob = new Blob([content], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = defaultName;
-                    a.click();
+                    a.href = url; a.download = defaultName; a.click();
                     URL.revokeObjectURL(url);
                     return defaultName;
                 }
-            } catch (e) {
-                return null;
-            }
+            } catch (e) { return null; }
         };
 
-        // --- メインアプリ ---
+        // --- UI components ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (window.lucide && iconRef.current) {
+                    iconRef.current.innerHTML = '';
+                    const iconName = name.charAt(0).toLowerCase() + name.slice(1).replace(/([A-Z])/g, '-$1').toLowerCase();
+                    const icon = document.createElement('i');
+                    icon.setAttribute('data-lucide', iconName);
+                    icon.style.width = `${size}px`; icon.style.height = `${size}px`;
+                    if (className) icon.className = className;
+                    iconRef.current.appendChild(icon);
+                    window.lucide.createIcons({
+                        attrs: { strokeWidth: 2, width: size, height: size },
+                        nameAttr: 'data-lucide', icons: window.lucide.icons
+                    });
+                }
+            }, [name, size, className]);
+            return <span ref={iconRef} className="inline-flex items-center justify-center"></span>;
+        };
+
+        // --- Main App ---
         function App() {
             const [appState, setAppState] = useState('setup');
             const [theme, setTheme] = useState('');
-            // learningDataは常に250個の配列を維持し、個々の進捗が更新される
-            const [learningData, setLearningData] = useState([]);
-            const [feedbackHistory, setFeedbackHistory] = useState([]);
+            const [learningData, setLearningData] = useState([]); // 250文法全体の最新状態
+            const [feedbackHistory, setFeedbackHistory] = useState([]); // 追記型フィードバック
             const [currentTask, setCurrentTask] = useState(null);
             const [userAnswer, setUserAnswer] = useState('');
             const [evaluation, setEvaluation] = useState(null);
@@ -352,107 +345,66 @@
             }, []);
 
             useEffect(() => {
-                addLog("システム: アプリケーション起動 v1.6");
+                addLog("システム: アプリケーション起動 v1.7");
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
             }, [addLog]);
 
-            // フォールバック付きAI呼び出し
+            // --- AI Logic with Fallback ---
             const callAIWithFallback = async (prompt, key, isJson = true) => {
-                const models = [
-                    "gemini-2.5-flash",
-                    "gemini-2.0-flash",
-                    "gemini-flash-latest",
-                    "gemini-3-flash-preview"
-                ];
-
+                const models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-3-flash-preview"];
                 for (let i = 0; i < models.length; i++) {
                     const modelId = models[i];
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${key}`;
-                    addLog(`[AI試行 ${i+1}/${models.length}]: モデル ${modelId} を使用中...`);
-
+                    addLog(`[AI試行]: モデル ${modelId} を使用中...`);
                     const payload = {
                         contents: [{ parts: [{ text: prompt }] }],
                         generationConfig: isJson ? { responseMimeType: "application/json", temperature: 0.7 } : { temperature: 0.7 }
                     };
-
                     try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-
+                        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         if (response.status === 429) {
-                            addLog(`[注意]: モデル ${modelId} がレートリミットに達しました。リトライせずに次のモデルへ移行します。`);
-                            if (i === models.length - 1) {
-                                throw new Error("全モデルのレートリミットに達しました。しばらく時間をおいてください。");
-                            }
-                            continue; // 次のモデルへ（リトライなし）
+                            addLog(`[警告]: ${modelId} レートリミット。次へ移行。`);
+                            if (i === models.length - 1) throw new Error("全モデル制限中。");
+                            continue;
                         }
-
-                        if (!response.ok) {
-                            const errBody = await response.json().catch(() => ({}));
-                            throw new Error(`API Error ${response.status} (${modelId}): ${errBody.error?.message || '不明なエラー'}`);
-                        }
-
+                        if (!response.ok) throw new Error(`API Error ${response.status}`);
                         const data = await response.json();
                         const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        addLog(`[AI成功]: モデル ${modelId} でレスポンスを受信しました。`);
                         return isJson ? JSON.parse(result) : result;
-
                     } catch (e) {
-                        if (e.message.includes("全モデル") || i === models.length - 1) {
-                            addLog(`[致命的エラー]: ${e.message}`);
-                            throw e;
-                        }
-                        addLog(`[注意]: モデル ${modelId} でエラーが発生しました。次のモデルを試します。 (${e.message})`);
+                        if (i === models.length - 1) { addLog(`[致命的]: ${e.message}`); throw e; }
                     }
                 }
             };
 
+            // --- Handlers ---
             const handleImport = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+                const file = e.target.files[0]; if (!file) return;
                 setStorageName(file.name);
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    try {
-                        const data = JSON.parse(ev.target.result);
-                        // JSONファイルは250個全体のデータを持つ想定
-                        setLearningData(data);
-                        setAppState('theme_input');
-                        addLog(`システム: 学習データ ${file.name} を読み込みました。`);
-                    } catch (err) { addLog("エラー: ファイル解析失敗"); }
+                    try { const data = JSON.parse(ev.target.result); setLearningData(data); setAppState('theme_input'); addLog(`システム: 学習データ読込完了。`); }
+                    catch (err) { addLog("エラー: ファイル解析失敗"); }
                 };
-                reader.readAsText(file);
-                e.target.value = '';
+                reader.readAsText(file); e.target.value = '';
             };
 
             const handleImportFeedback = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+                const file = e.target.files[0]; if (!file) return;
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     try {
                         const data = JSON.parse(ev.target.result);
-                        if (Array.isArray(data)) {
-                            setFeedbackHistory(data);
-                            addLog(`システム: フィードバック履歴 ${file.name} を追記用に読み込みました (${data.length}件)。`);
-                        }
-                    } catch (err) { addLog("エラー: フィードバックファイル解析失敗"); }
+                        if (Array.isArray(data)) { setFeedbackHistory(data); addLog(`システム: フィードバック読込 (${data.length}件)。追記可能です。`); }
+                    } catch (err) { addLog("エラー: 解析失敗"); }
                 };
-                reader.readAsText(file);
-                e.target.value = '';
+                reader.readAsText(file); e.target.value = '';
             };
 
             const initFromDefault = () => {
-                addLog("システム: 新規学習データの初期化を開始...");
-                // 250個すべてのデータに対して初期値を設定
                 const initial = INITIAL_GRAMMAR_LIST.map(g => ({
-                    id: g.id,
-                    text: g.text,
-                    meaning: g.meaning,
+                    id: g.id, text: g.text, meaning: g.meaning,
                     patterns: {
                         'zh-jp': { lastStudied: null, correctCount: 0, incorrectCount: 0, totalCount: 0, level: 1 },
                         'jp-zh': { lastStudied: null, correctCount: 0, incorrectCount: 0, totalCount: 0, level: 1 }
@@ -460,337 +412,190 @@
                 }));
                 setLearningData(initial);
                 setStorageName('srs_learning_data.json');
-                // 自動保存(localStorage)
                 localStorage.setItem('srs_local_save', JSON.stringify(initial));
-                addLog("システム: 250個の学習データを初期化し、内部に自動保存しました。");
+                addLog("システム: 250個の学習データを初期化しました。");
                 setAppState('theme_input');
             };
 
             const selectNextTask = () => {
-                addLog("システム: SRSアルゴリズムに基づき優先文法を選出中...");
                 const now = Date.now();
-                let bestScore = -1;
-                let selected = null;
-
+                let bestScore = -1; let selected = null;
                 learningData.forEach(item => {
                     ['zh-jp', 'jp-zh'].forEach(p => {
                         const d = item.patterns[p];
-                        let score = 0;
-                        if (!d.lastStudied) {
-                            score = 1000000 + Math.random();
-                        } else {
-                            const hours = (now - d.lastStudied) / (1000 * 60 * 60);
-                            const interval = Math.pow(d.level, 2) * 12; // SRS係数
-                            score = hours / interval;
-                        }
-                        if (score > bestScore) {
-                            bestScore = score;
-                            selected = { item, pattern: p };
-                        }
+                        let score = !d.lastStudied ? (1000000 + Math.random()) : ((now - d.lastStudied) / (1000 * 60 * 60)) / (Math.pow(d.level, 2) * 12);
+                        if (score > bestScore) { bestScore = score; selected = { item, pattern: p }; }
                     });
                 });
                 return selected;
             };
 
             const startLesson = async () => {
-                if (!apiKey) { addLog("システム: APIキーが未設定です。"); setShowSettings(true); return; }
+                if (!apiKey) { setShowSettings(true); return; }
                 const task = selectNextTask();
                 setAppState('loading');
-                
-                const prompt = `テーマ「${theme}」と中国語文法「${task.item.text}(意味:${task.item.meaning})」を使用して、以下のJSONを生成してください。
-                {"chinese":"中国語例文","pinyin":"ピンイン","japanese":"日本語訳","explanation":"文法の使い方の解説"}`;
-
+                const prompt = `テーマ「${theme}」と中国語文法「${task.item.text}(意味:${task.item.meaning})」を使用してJSON生成: {"chinese":"..","pinyin":"..","japanese":"..","explanation":".."}`;
                 try {
                     const res = await callAIWithFallback(prompt, apiKey);
                     setCurrentTask({ ...task, aiData: res });
-                    setAppState('question');
-                    setUserAnswer('');
-                    setErrorMessage('');
-                } catch (e) {
-                    setErrorMessage(e.message);
-                    setAppState('theme_input'); // 元の入力画面に戻る
-                }
+                    setAppState('question'); setUserAnswer(''); setErrorMessage('');
+                } catch (e) { setErrorMessage(e.message); setAppState('theme_input'); }
             };
 
             const submitAnswer = async () => {
                 setAppState('loading');
-                addLog("システム: AIによる添削を実行中...");
                 const target = currentTask.pattern === 'zh-jp' ? currentTask.aiData.japanese : currentTask.aiData.chinese;
-                const prompt = `问题: ${currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}
-                正解の目安: ${target}
-                ユーザーの回答: ${userAnswer}
-                上記を添削しJSONで返してください。意味が通じていればisCorrectをtrueに。
-                {"isCorrect":boolean, "feedback":"具体的なアドバイス", "modelAnswer":"より自然な解答例"}`;
-
+                const prompt = `問題: ${currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese} \n正解目安: ${target} \n回答: ${userAnswer} \n添削JSON: {"isCorrect":boolean, "feedback":"..", "modelAnswer":".."}`;
                 try {
                     const res = await callAIWithFallback(prompt, apiKey);
-                    setEvaluation(res);
-                    setAppState('result');
-                    setErrorMessage('');
-                } catch (e) {
-                    setErrorMessage(e.message);
-                    setAppState('question'); // 回答画面に戻る
-                }
+                    setEvaluation(res); setAppState('result');
+                } catch (e) { setErrorMessage(e.message); setAppState('question'); }
             };
 
-            // 理解度を入力してローカルデータを更新後、「次へ」か「終了」を待機する状態にする
             const finishLesson = (lvl) => {
-                addLog(`システム: 理解度 ${lvl} でデータを更新...`);
+                addLog(`システム: 理解度 ${lvl} で更新。`);
                 
-                const newFeedbackEntry = {
-                    timestamp: new Date().toISOString(),
+                // フィードバック履歴への純粋な追記（250例文とは無関係に増えていく）
+                const newFeedback = {
+                    date: new Date().toLocaleString(),
+                    topic: theme,
                     grammar: currentTask.item.text,
-                    question: currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese,
-                    pinyin: currentTask.aiData.pinyin,
-                    userAnswer: userAnswer,
+                    example: currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese,
                     isCorrect: evaluation.isCorrect,
                     modelAnswer: evaluation.modelAnswer,
                     feedback: evaluation.feedback,
-                    explanation: currentTask.aiData.explanation,
-                    userLevel: lvl
+                    explanation: currentTask.aiData.explanation
                 };
-                setFeedbackHistory(prev => [...prev, newFeedbackEntry]);
+                setFeedbackHistory(prev => [...prev, newFeedback]);
 
-                // learningData (250個のリスト) のうち、該当する項目だけを更新
+                // 学習データの更新 (250個全体の状態)
                 const nextData = learningData.map(item => {
                     if (item.id === currentTask.item.id) {
                         const p = currentTask.pattern;
-                        return {
-                            ...item,
-                            patterns: {
-                                ...item.patterns,
-                                [p]: {
-                                    lastStudied: Date.now(),
-                                    totalCount: item.patterns[p].totalCount + 1,
-                                    correctCount: item.patterns[p].correctCount + (evaluation.isCorrect ? 1 : 0),
-                                    incorrectCount: item.patterns[p].incorrectCount + (evaluation.isCorrect ? 0 : 1),
-                                    level: lvl
-                                }
-                            }
-                        };
+                        return { ...item, patterns: { ...item.patterns, [p]: {
+                            lastStudied: Date.now(),
+                            totalCount: item.patterns[p].totalCount + 1,
+                            correctCount: item.patterns[p].correctCount + (evaluation.isCorrect ? 1 : 0),
+                            incorrectCount: item.patterns[p].incorrectCount + (evaluation.isCorrect ? 0 : 1),
+                            level: lvl
+                        }}};
                     }
                     return item;
                 });
-                
                 setLearningData(nextData);
-                // 内部ストレージに250個全体のデータを上書き自動保存
                 localStorage.setItem('srs_local_save', JSON.stringify(nextData));
-                addLog("システム: 学習結果を自動保存しました。アクション待機中...");
-
                 setAppState('result_action');
-            };
-
-            const triggerSaveLearningData = async () => {
-                // learningData は常に250個全ての文法データを持つ
-                const name = await saveFile(JSON.stringify(learningData, null, 2), storageName);
-                if (name) {
-                    setStorageName(name);
-                    addLog(`システム: 250個全ての学習データを ${name} に保存完了。`);
-                }
-            };
-
-            const triggerSaveFeedback = async () => {
-                const name = await saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json');
-                if (name) addLog(`システム: フィードバック履歴を ${name} に保存完了。`);
-            };
-
-            const saveApiKey = () => {
-                localStorage.setItem('srs_gemini_key', apiKey);
-                addLog("システム: APIキーを更新しました。");
-                setShowSettings(false);
             };
 
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.6</span></div>
-                        <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full hover:bg-indigo-600 active:scale-90 transition-all">
-                            <Icon name="Settings" />
-                        </button>
+                        <div className="flex items-center gap-2 font-bold"><Icon name="BookOpen" /> <span>中国語 SRS v1.7</span></div>
+                        <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full active:scale-90 transition-all"><Icon name="Settings" /></button>
                     </header>
 
                     <main className="p-4 flex-grow max-w-lg mx-auto w-full">
-                        {errorMessage && (
-                            <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs animate-fade-in flex items-start gap-3">
-                                <Icon name="AlertTriangle" className="shrink-0 mt-0.5" />
-                                <div><p className="font-bold">エラーが発生しました</p><p>{errorMessage}</p></div>
-                            </div>
-                        )}
+                        {errorMessage && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-xl text-xs flex gap-2"><Icon name="AlertTriangle" size={14}/> {errorMessage}</div>}
 
                         {appState === 'setup' && (
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in mt-6">
-                                <h2 className="text-xl font-bold mb-6 text-center text-slate-800 tracking-tight">過去の学習データを読み込みますか？</h2>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border mt-6 animate-fade-in text-center">
+                                <h2 className="text-lg font-bold mb-6">学習データを読み込みますか？</h2>
                                 <div className="space-y-4">
-                                    <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-5 rounded-2xl border border-indigo-100 flex justify-center items-center cursor-pointer active:bg-indigo-100 transition-colors shadow-sm">
-                                        <Icon name="Upload" className="mr-3" /> 学習データをインポート
+                                    <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-5 rounded-2xl flex justify-center items-center cursor-pointer">
+                                        <Icon name="Upload" className="mr-3" /> インポート
                                         <input type="file" onChange={handleImport} className="hidden" accept=".json" />
                                     </label>
-                                    <button onClick={initFromDefault} className="w-full bg-slate-900 text-white font-bold py-5 rounded-2xl flex justify-center items-center active:bg-black transition-colors shadow-lg shadow-slate-200">
-                                        <Icon name="FilePlus" className="mr-3" /> いいえ（新規学習データを作成）
+                                    <button onClick={initFromDefault} className="w-full bg-slate-900 text-white font-bold py-5 rounded-2xl flex justify-center items-center">
+                                        <Icon name="FilePlus" className="mr-3" /> 新規データ作成
                                     </button>
                                 </div>
                             </div>
                         )}
 
                         {appState === 'theme_input' && (
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in mt-6">
-                                <div className="flex items-center gap-2 mb-4 text-indigo-600 font-bold">
-                                    <Icon name="Target" size={18} />
-                                    <h2>今日のテーマを設定</h2>
-                                </div>
-                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 職場の技術的トラブル" className="w-full border-2 p-4 rounded-2xl mb-4 bg-slate-50 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
-                                <button onClick={startLesson} disabled={!theme} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl disabled:bg-slate-300 shadow-xl shadow-indigo-100 active:scale-95 transition-transform">学習開始</button>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border mt-6 animate-fade-in">
+                                <h2 className="font-bold mb-4 flex items-center gap-2 text-indigo-600"><Icon name="Target" size={18}/> 今日のテーマ</h2>
+                                <input type="text" value={theme} onChange={e => setTheme(e.target.value)} placeholder="例: 技術的トラブル" className="w-full border-2 p-4 rounded-2xl mb-4 bg-slate-50 outline-none" />
+                                <button onClick={startLesson} disabled={!theme} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform disabled:bg-slate-300">学習開始</button>
                             </div>
                         )}
 
-                        {appState === 'loading' && (
-                            <div className="flex flex-col items-center justify-center py-24 animate-pulse">
-                                <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-6 shadow-sm"></div>
-                                <p className="text-slate-500 font-bold text-sm">AIが処理中...</p>
-                                <p className="text-slate-300 text-[10px] mt-2 font-mono">Rate Limit発生時は自動的に別モデルを試行します</p>
-                            </div>
-                        )}
+                        {appState === 'loading' && <div className="py-24 flex flex-col items-center animate-pulse"><div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div><p className="text-slate-400 font-bold">AI処理中...</p></div>}
 
                         {appState === 'question' && (
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in space-y-5">
-                                <div className="flex justify-between items-center text-[11px] font-bold text-indigo-500 tracking-wider">
-                                    <span className="bg-indigo-50 px-2 py-0.5 rounded uppercase">{currentTask.pattern === 'zh-jp' ? 'ZH → JP' : 'JP → ZH'}</span>
-                                    <span className="text-slate-400">ID: {currentTask.item.id} | {currentTask.item.text}</span>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border animate-fade-in space-y-5">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{currentTask.pattern.toUpperCase()} | {currentTask.item.text}</div>
+                                <div className="p-6 bg-slate-900 text-white rounded-3xl shadow-inner">
+                                    <h3 className="text-xl font-bold mb-2">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</h3>
+                                    {currentTask.pattern === 'zh-jp' && <p className="text-indigo-300 font-mono text-sm">{currentTask.aiData.pinyin}</p>}
                                 </div>
-                                <div className="p-6 bg-slate-900 text-white rounded-3xl shadow-inner relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full -mr-10 -mt-10"></div>
-                                    <h3 className="text-2xl font-bold mb-3 relative z-10 leading-relaxed">
-                                        {currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}
-                                    </h3>
-                                    {currentTask.pattern === 'zh-jp' && <p className="text-indigo-300 font-mono text-base opacity-90">{currentTask.aiData.pinyin}</p>}
-                                </div>
-                                <textarea value={userAnswer} onChange={e => setUserAnswer(e.target.value)} placeholder={currentTask.pattern === 'zh-jp' ? "日本語訳を入力..." : "中国語を入力..."} className="w-full border-2 p-4 h-40 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-lg leading-relaxed shadow-sm" />
-                                <button onClick={submitAnswer} disabled={!userAnswer.trim()} className="w-full bg-indigo-600 text-white font-bold py-5 rounded-2xl shadow-xl shadow-indigo-100 active:scale-95 transition-transform disabled:bg-slate-200">回答を送信</button>
+                                <textarea value={userAnswer} onChange={e => setUserAnswer(e.target.value)} placeholder="回答を入力..." className="w-full border-2 p-4 h-32 rounded-2xl outline-none" />
+                                <button onClick={submitAnswer} className="w-full bg-indigo-600 text-white font-bold py-5 rounded-2xl shadow-xl active:scale-95 transition-transform">送信</button>
                             </div>
                         )}
 
                         {(appState === 'result' || appState === 'result_action') && (
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in space-y-6">
-                                <div className="text-center py-4">
-                                    <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${evaluation.isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                        <Icon name={evaluation.isCorrect ? "Check" : "X"} size={40} />
-                                    </div>
-                                    <h3 className="text-2xl font-black">{evaluation.isCorrect ? '正解です！' : '惜しい！'}</h3>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border animate-fade-in space-y-4">
+                                <div className="text-center pb-4">
+                                    <Icon name={evaluation.isCorrect ? "CheckCircle" : "XCircle"} size={48} className={evaluation.isCorrect ? "text-green-500" : "text-red-500"} />
+                                    <h3 className="text-xl font-bold mt-2">{evaluation.isCorrect ? '正解！' : '不正解'}</h3>
                                 </div>
-                                <div className="space-y-4 text-sm">
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest">問題の例文</p>
-                                        <p className="font-bold text-slate-700">{currentTask.pattern === 'zh-jp' ? currentTask.aiData.chinese : currentTask.aiData.japanese}</p>
-                                    </div>
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                                        <p className="text-[10px] text-slate-400 font-black mb-1 uppercase tracking-widest">あなたの回答</p>
-                                        <p className="font-bold text-slate-600 italic">{userAnswer}</p>
-                                    </div>
-                                    <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
-                                        <p className="text-[10px] text-emerald-600 font-black mb-1 uppercase tracking-widest">模範解答</p>
-                                        <p className="font-bold text-emerald-900">{evaluation.modelAnswer}</p>
-                                    </div>
-                                    <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-                                        <p className="text-[10px] text-amber-600 font-black mb-1 uppercase tracking-widest">フィードバックポイント</p>
-                                        <p className="text-amber-900 leading-relaxed">{evaluation.feedback}</p>
-                                    </div>
-                                    <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
-                                        <p className="text-[10px] text-indigo-600 font-black mb-1 uppercase tracking-widest">文法の解説</p>
-                                        <p className="text-indigo-900 leading-relaxed">{currentTask.aiData.explanation}</p>
-                                    </div>
+                                <div className="space-y-3 text-sm">
+                                    <div className="p-3 bg-emerald-50 rounded-xl"><strong>模範:</strong> {evaluation.modelAnswer}</div>
+                                    <div className="p-3 bg-amber-50 rounded-xl"><strong>助言:</strong> {evaluation.feedback}</div>
+                                    <div className="p-3 bg-indigo-50 rounded-xl"><strong>解説:</strong> {currentTask.aiData.explanation}</div>
                                 </div>
-                                <div className="pt-6 border-t border-slate-100">
-                                    {appState === 'result' ? (
-                                        <>
-                                            <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">理解度を入力して待機</p>
-                                            <div className="flex gap-2">
-                                                {[1,2,3,4,5].map(l => (
-                                                    <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-5 bg-slate-50 hover:bg-indigo-600 hover:text-white rounded-2xl font-black text-slate-700 active:scale-90 transition-all shadow-sm">
-                                                        {l}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p className="text-center text-[10px] font-black text-slate-400 mb-4 uppercase tracking-[0.2em]">次のアクションを選択</p>
-                                            <div className="flex gap-3">
-                                                <button onClick={startLesson} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-indigo-200 text-sm">
-                                                    次の問題へ進む
-                                                </button>
-                                                <button onClick={() => setAppState('save_prompt')} className="flex-1 py-4 bg-slate-800 text-white rounded-2xl font-bold active:scale-95 transition-all shadow-lg shadow-slate-200 text-sm">
-                                                    学習を終了する
-                                                </button>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
+                                {appState === 'result' ? (
+                                    <div className="flex gap-2 pt-4 border-t">
+                                        {[1,2,3,4,5].map(l => <button key={l} onClick={() => finishLesson(l)} className="flex-1 py-4 bg-slate-50 font-bold rounded-xl active:bg-indigo-600 active:text-white transition-all">{l}</button>)}
+                                    </div>
+                                ) : (
+                                    <div className="flex gap-2 pt-4 border-t">
+                                        <button onClick={startLesson} className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-bold">次へ進む</button>
+                                        <button onClick={() => setAppState('save_prompt')} className="flex-1 py-4 bg-slate-800 text-white rounded-xl font-bold">終了</button>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {appState === 'save_prompt' && (
-                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 animate-fade-in mt-6">
-                                <h2 className="text-xl font-bold mb-6 text-center text-slate-800 tracking-tight">学習の終了と保存</h2>
-                                <p className="text-sm text-slate-600 mb-6 text-center leading-relaxed">
-                                    本日の学習結果およびフィードバック履歴をファイルに保存できます。保存後、または保存しない場合は「テーマ入力画面に戻る」を押してください。
-                                </p>
-                                <div className="space-y-4">
-                                    <button onClick={triggerSaveLearningData} className="w-full bg-indigo-50 text-indigo-700 font-bold py-4 rounded-2xl border border-indigo-100 flex justify-center items-center active:scale-95 transition-all shadow-sm">
-                                        <Icon name="Save" className="mr-3" size={16} /> 学習結果を保存 (全250文法)
-                                    </button>
-                                    <button onClick={triggerSaveFeedback} className="w-full bg-emerald-50 text-emerald-700 font-bold py-4 rounded-2xl border border-emerald-100 flex justify-center items-center active:scale-95 transition-all shadow-sm">
-                                        <Icon name="Download" className="mr-3" size={16} /> フィードバック解説を保存
-                                    </button>
-                                    <div className="pt-2">
-                                        <button onClick={() => setAppState('theme_input')} className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center active:scale-95 transition-all shadow-lg shadow-slate-200">
-                                            <Icon name="Home" className="mr-3" size={16} /> テーマ入力画面に戻る
-                                        </button>
-                                    </div>
-                                </div>
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border mt-6 animate-fade-in text-center space-y-4">
+                                <h2 className="font-bold">学習終了</h2>
+                                <button onClick={() => saveFile(JSON.stringify(learningData, null, 2), storageName)} className="w-full py-4 bg-indigo-50 text-indigo-700 font-bold rounded-2xl border border-indigo-100 flex justify-center items-center"><Icon name="Save" className="mr-2" size={16}/> 学習結果を保存</button>
+                                <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="w-full py-4 bg-emerald-50 text-emerald-700 font-bold rounded-2xl border border-emerald-100 flex justify-center items-center"><Icon name="Download" className="mr-2" size={16}/> フィードバック追記保存</button>
+                                <button onClick={() => setAppState('theme_input')} className="w-full py-4 bg-slate-900 text-white font-bold rounded-2xl flex justify-center items-center"><Icon name="Home" className="mr-2" size={16}/> テーマ入力へ戻る</button>
                             </div>
                         )}
                     </main>
 
-                    <footer className="fixed bottom-0 w-full bg-white border-t border-slate-100 p-2.5 text-[10px] text-slate-400 text-center z-30 font-mono tracking-tight flex justify-center gap-4">
+                    <footer className="fixed bottom-0 w-full bg-white border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
                         <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini-2.5-Flash</span>
                     </footer>
 
                     {showSettings && (
-                        <div className="fixed inset-0 bg-slate-900/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md">
-                            <div className="bg-white p-6 rounded-[2.5rem] w-full max-w-md shadow-2xl relative animate-fade-in overflow-y-auto max-h-[90vh]">
-                                <button onClick={() => setShowSettings(false)} className="absolute top-6 right-6 text-slate-300 hover:text-slate-600 transition-colors"><Icon name="X" size={24}/></button>
-                                <h2 className="font-black text-2xl mb-8 flex items-center tracking-tight text-slate-800"><Icon name="Settings" className="mr-3 text-indigo-600" />設定・管理</h2>
-                                
-                                <div className="space-y-8">
-                                    <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-                                        <label className="block text-[10px] font-black text-slate-400 mb-3 uppercase tracking-widest">Gemini API Key</label>
-                                        <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border-2 p-3.5 rounded-2xl outline-none focus:border-indigo-500 text-sm mb-4 bg-white" placeholder="AIza..." />
-                                        <button onClick={saveApiKey} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl text-sm shadow-xl shadow-indigo-100 active:scale-95 transition-all">キーを保存して閉じる</button>
+                        <div className="fixed inset-0 bg-slate-900/70 z-[100] flex items-center justify-center p-4 backdrop-blur">
+                            <div className="bg-white p-6 rounded-[2rem] w-full max-w-md shadow-2xl relative">
+                                <button onClick={() => setShowSettings(false)} className="absolute top-6 right-6 text-slate-400"><Icon name="X" size={20}/></button>
+                                <h2 className="font-black text-xl mb-6 flex items-center"><Icon name="Settings" className="mr-2 text-indigo-600" /> 設定管理</h2>
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">API KEY</label>
+                                        <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} className="w-full border-2 p-3 rounded-xl outline-none focus:border-indigo-500 text-sm mb-2" />
+                                        <button onClick={() => { localStorage.setItem('srs_gemini_key', apiKey); setShowSettings(false); addLog("システム: キー保存。"); }} className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl text-xs">保存</button>
                                     </div>
-
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">データ保存</p>
-                                        <button onClick={triggerSaveLearningData} className="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex justify-center items-center text-sm active:scale-95 transition-all shadow-lg shadow-slate-200">
-                                            <Icon name="Save" className="mr-3" size={16} /> 学習状況を名前を付けて保存
-                                        </button>
-                                    </div>
-
-                                    <div className="space-y-3">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">フィードバック履歴 ({feedbackHistory.length}件)</p>
-                                        <label className="w-full bg-indigo-50 text-indigo-700 font-bold py-4 rounded-2xl border-2 border-dashed border-indigo-200 flex justify-center items-center cursor-pointer text-sm active:bg-indigo-100 transition-colors">
-                                            <Icon name="FileUp" className="mr-3" size={16} /> 履歴ファイルを読込
+                                    <div className="space-y-2">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">フィードバック履歴 ({feedbackHistory.length}件)</p>
+                                        <label className="w-full py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl border-2 border-dashed border-indigo-200 flex justify-center items-center cursor-pointer text-xs">
+                                            履歴ファイル読み込み（追記用）
                                             <input type="file" onChange={handleImportFeedback} className="hidden" accept=".json" />
                                         </label>
-                                        <button onClick={triggerSaveFeedback} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl flex justify-center items-center text-sm active:scale-95 transition-all shadow-lg shadow-emerald-100">
-                                            <Icon name="Download" className="mr-3" size={16} /> 履歴を追記保存
-                                        </button>
+                                        <button onClick={() => saveFile(JSON.stringify(feedbackHistory, null, 2), 'feedback_history.json')} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl text-xs">現在の履歴を名前を付けて保存</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
-
                     <LogWindow logs={logs} onClear={() => setLogs([])} />
                 </div>
             );
@@ -798,85 +603,45 @@
 
         const LogWindow = ({ logs, onClear }) => {
             const [min, setMin] = useState(true);
-            const [size, setSize] = useState({ w: 340, h: 300 });
+            const [size, setSize] = useState({ w: 320, h: 250 });
             const [pos, setPos] = useState({ x: 20, y: window.innerHeight - 50 });
             const [isDragging, setIsDragging] = useState(false);
             const [isResizing, setIsResizing] = useState(false);
             const dragRef = useRef({ x: 0, y: 0, w: 0, h: 0 });
             const scrollRef = useRef(null);
 
-            useEffect(() => {
-                if (!min && scrollRef.current) {
-                    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-                }
-            }, [logs, min]);
-
-            const onPointerDown = (e, type) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (type === 'drag') {
-                    setIsDragging(true);
-                    dragRef.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
-                } else if (type === 'resize') {
-                    setIsResizing(true);
-                    dragRef.current = { x: e.clientX, y: e.clientY, w: size.w, h: size.h };
-                }
-            };
+            useEffect(() => { if (!min && scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, [logs, min]);
 
             const onPointerMove = useCallback((e) => {
-                if (isDragging) {
-                    setPos({ x: e.clientX - dragRef.current.x, y: e.clientY - dragRef.current.y });
-                } else if (isResizing) {
-                    const dx = e.clientX - dragRef.current.x;
-                    const dy = e.clientY - dragRef.current.y;
-                    setSize({ w: Math.max(200, dragRef.current.w + dx), h: Math.max(100, dragRef.current.h + dy) });
-                }
+                if (isDragging) setPos({ x: e.clientX - dragRef.current.x, y: e.clientY - dragRef.current.y });
+                else if (isResizing) setSize({ w: Math.max(200, dragRef.current.w + (e.clientX - dragRef.current.x)), h: Math.max(100, dragRef.current.h + (e.clientY - dragRef.current.y)) });
             }, [isDragging, isResizing]);
-
-            const onPointerUp = useCallback(() => {
-                setIsDragging(false);
-                setIsResizing(false);
-            }, []);
 
             useEffect(() => {
                 if (isDragging || isResizing) {
                     window.addEventListener('pointermove', onPointerMove);
-                    window.addEventListener('pointerup', onPointerUp);
+                    window.addEventListener('pointerup', () => { setIsDragging(false); setIsResizing(false); });
                 }
-                return () => {
-                    window.removeEventListener('pointermove', onPointerMove);
-                    window.removeEventListener('pointerup', onPointerUp);
-                };
-            }, [isDragging, isResizing, onPointerMove, onPointerUp]);
-
-            const copyLogs = () => {
-                const text = logs.join('\n');
-                const el = document.createElement('textarea');
-                el.value = text;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-            };
+                return () => { window.removeEventListener('pointermove', onPointerMove); };
+            }, [isDragging, isResizing, onPointerMove]);
 
             return (
-                <div className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[9px] shadow-2xl overflow-hidden flex flex-col border border-slate-700 rounded-2xl"
-                    style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: `${size.w}px`, height: min ? '36px' : `${size.h}px`, transition: isDragging || isResizing ? 'none' : 'height 0.2s' }}>
-                    <div className="bg-slate-800 p-2.5 flex justify-between items-center no-select drag-handle border-b border-slate-700 cursor-move" onPointerDown={(e) => onPointerDown(e, 'drag')}>
-                        <div className="flex items-center gap-2 opacity-80 font-black"><Icon name="Terminal" size={12}/> SYSTEM LOG</div>
-                        <div className="flex items-center gap-3">
-                            {!min && <button onClick={copyLogs} className="hover:text-white"><Icon name="Copy" size={14}/></button>}
-                            <button onClick={(e) => { e.stopPropagation(); setMin(!min); }} className="hover:text-white"><Icon name={min ? "ChevronUp" : "ChevronDown"} size={16}/></button>
+                <div className="fixed z-[9999] bg-slate-900 text-emerald-400 font-mono text-[9px] shadow-2xl flex flex-col border border-slate-700 rounded-xl overflow-hidden"
+                    style={{ left: `${pos.x}px`, top: `${pos.y}px`, width: `${size.w}px`, height: min ? '36px' : `${size.h}px` }}>
+                    <div className="bg-slate-800 p-2 flex justify-between items-center cursor-move" 
+                        onPointerDown={(e) => { e.preventDefault(); setIsDragging(true); dragRef.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }; }}>
+                        <span className="opacity-70 flex items-center gap-1"><Icon name="Terminal" size={12}/> LOG</span>
+                        <div className="flex gap-2">
+                            {!min && <button onClick={() => { const text = logs.join('\n'); const el = document.createElement('textarea'); el.value = text; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); }}><Icon name="Copy" size={12}/></button>}
+                            <button onClick={(e) => { e.stopPropagation(); setMin(!min); }}><Icon name={min ? "ChevronUp" : "ChevronDown"} size={14}/></button>
                         </div>
                     </div>
                     {!min && (
                         <>
-                            <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-1 bg-black/80 log-content select-text overscroll-contain">
-                                {logs.map((log, i) => (<div key={i} className="border-b border-slate-800/30 pb-1 last:border-0">{log}</div>))}
+                            <div ref={scrollRef} className="flex-1 overflow-y-auto p-2 space-y-1 bg-black/50 select-text">
+                                {logs.map((l, i) => <div key={i}>{l}</div>)}
                             </div>
-                            <div className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize z-10 p-1 opacity-50" onPointerDown={(e) => onPointerDown(e, 'resize')}>
-                                <div className="w-full h-full border-r-2 border-b-2 border-slate-500"></div>
-                            </div>
+                            <div className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize" onPointerDown={(e) => { e.preventDefault(); setIsResizing(true); dragRef.current = { x: e.clientX, y: e.clientY, w: size.w, h: size.h }; }}></div>
                         </>
                     )}
                 </div>
