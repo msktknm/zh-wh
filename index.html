@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.10</title>
+    <title>中国語 SRS学習 v1.11</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -298,6 +298,10 @@
 
         // --- Helper: 学習データ保存 ---
         const saveFile = async (content, defaultName) => {
+            if (!content || content.trim() === "" || content === "[]" || content === "{}") {
+                alert("エラー: 保存するデータが空のため、保存を中止しました。学習を開始してデータを生成してください。");
+                return null;
+            }
             try {
                 if (window.showSaveFilePicker) {
                     const handle = await window.showSaveFilePicker({
@@ -321,6 +325,10 @@
 
         // --- Helper: フィードバック履歴保存 (追記) ---
         const saveFeedbackFile = async (newEntries, defaultName) => {
+            if (!newEntries || !Array.isArray(newEntries) || newEntries.length === 0) {
+                alert("エラー: 保存するフィードバック履歴が空のため、保存を中止しました。");
+                return null;
+            }
             try {
                 if (window.showSaveFilePicker) {
                     const handle = await window.showSaveFilePicker({
@@ -405,7 +413,7 @@
             useEffect(() => {
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
-                addLog("システム: v1.10 起動。");
+                addLog("システム: v1.11 起動。");
             }, [addLog]);
 
             const callAIWithFallback = async (prompt, key, isJson = true) => {
@@ -579,7 +587,7 @@
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.10</span></div>
+                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.11</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full active:scale-90 transition-all"><Icon name="Settings" /></button>
                     </header>
 
@@ -666,7 +674,7 @@
 
                     <footer className="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
-                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.10)</span>
+                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.11)</span>
                     </footer>
 
                     {showSettings && (
