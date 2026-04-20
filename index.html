@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.11</title>
+    <title>中国語 SRS学習 v1.12</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -100,7 +100,7 @@
             { id: 54, text: "无非", meaning: "～に過ぎない" },
             { id: 55, text: "幸亏", meaning: "幸いにも" },
             { id: 56, text: "多亏", meaning: "～のおかげで" },
-            { id: 57, text: "一時", meaning: "一時的に、とっさに" },
+            { id: 57, text: "一时", meaning: "一時的に、とっさに" },
             { id: 58, text: "一向", meaning: "これまでずっと" },
             { id: 59, text: "再三", meaning: "何度も、再三" },
             { id: 60, text: "渐渐", meaning: "だんだん、次第に" },
@@ -109,7 +109,7 @@
             { id: 63, text: "总算", meaning: "どうやら、なんとか" },
             { id: 64, text: "怪不得", meaning: "道理で、無理もない" },
             { id: 65, text: "难怪", meaning: "道理で" },
-            { id: 66, text: "巴不得", meaning: "切に願う" },
+            { id: 66, text: "巴不得", meaning: "切に愿う" },
             { id: 67, text: "恨不得", meaning: "～したくてたまらない" },
             { id: 68, text: "说不定", meaning: "もしかしたら～かもしれない" },
             { id: 69, text: "倒不如", meaning: "いっそ～のほうがよい" },
@@ -170,7 +170,7 @@
             { id: 124, text: "乘", meaning: "～に乗じて" },
             { id: 125, text: "顺", meaning: "～に沿って" },
             { id: 126, text: "沿", meaning: "～に沿って" },
-            { id: 127, text: "顺着", meaning: "～に沿って、順を追って" },
+            { id: 127, text: "顺着", meaning: "～に沿って、顺を追って" },
             { id: 128, text: "沿着", meaning: "～に沿って" },
             { id: 129, text: "朝着", meaning: "～に向かって" },
             { id: 130, text: "向着", meaning: "～に向かって" },
@@ -336,7 +336,6 @@
                         types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
                     });
                     
-                    // 既存の内容を読み込む
                     let existingData = [];
                     try {
                         const file = await handle.getFile();
@@ -351,7 +350,6 @@
                         // 新規ファイルなどの場合は無視
                     }
                     
-                    // 今回の履歴を結合
                     const combinedData = [...existingData, ...newEntries];
 
                     const writable = await handle.createWritable();
@@ -359,7 +357,6 @@
                     await writable.close();
                     return handle.name;
                 } else {
-                    // FileSystem Access API が使えない環境（iPhoneのSafariなど）では追記できないため、そのままダウンロード
                     const blob = new Blob([JSON.stringify(newEntries, null, 2)], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -404,6 +401,12 @@
             const [showSettings, setShowSettings] = useState(false);
             const [storageName, setStorageName] = useState('srs_learning_data.json');
             const [errorMessage, setErrorMessage] = useState('');
+            const [toastMessage, setToastMessage] = useState('');
+
+            const showToast = useCallback((msg) => {
+                setToastMessage(msg);
+                setTimeout(() => setToastMessage(''), 3000);
+            }, []);
 
             const addLog = useCallback((msg) => {
                 const ts = new Date().toLocaleTimeString('ja-JP', { hour12: false });
@@ -413,7 +416,7 @@
             useEffect(() => {
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
-                addLog("システム: v1.11 起動。");
+                addLog("システム: v1.12 起動。");
             }, [addLog]);
 
             const callAIWithFallback = async (prompt, key, isJson = true) => {
@@ -437,8 +440,12 @@
                         });
 
                         if (response.status === 429) {
-                            const errBody = await response.text().catch(() => "読込不可");
-                            addLog(`[警告]: ${modelId} レートリミット (429)。レスポンス: ${errBody}`);
+                            let errMsg = "レートリミット超過";
+                            try {
+                                const errData = await response.json();
+                                errMsg = errData.error?.message || "レートリミット超過";
+                            } catch (e) {}
+                            addLog(`[警告]: ${modelId} レートリミット (429)。理由: ${errMsg}`);
                             if (i === models.length - 1) {
                                 throw new Error("全モデルのレートリミットに達しました。しばらく時間をおいてください。");
                             }
@@ -446,8 +453,12 @@
                         }
 
                         if (!response.ok) {
-                            const errBody = await response.json().catch(() => ({}));
-                            throw new Error(`API Error ${response.status} (${modelId}): ${errBody.error?.message || '不明なエラー'}`);
+                            let errMsg = "不明なエラー";
+                            try {
+                                const errData = await response.json();
+                                errMsg = errData.error?.message || "不明なエラー";
+                            } catch (e) {}
+                            throw new Error(`API Error ${response.status} (${modelId}): ${errMsg}`);
                         }
 
                         const data = await response.json();
@@ -502,7 +513,6 @@
                 learningData.forEach(item => {
                     ['zh-jp', 'jp-zh'].forEach(p => {
                         const d = item.patterns[p];
-                        // SRSアルゴリズム: 未学習を最優先、学習済みは (経過時間) / (理解度^2 * 定数) でスコアリング
                         let score = !d.lastStudied ? (1000000 + Math.random()) : ((now - d.lastStudied) / (1000 * 60 * 60)) / (Math.pow(d.level, 2) * 12);
                         if (score > bestScore) { bestScore = score; selected = { item, pattern: p }; }
                     });
@@ -586,8 +596,13 @@
 
             return (
                 <div className="min-h-screen flex flex-col pb-16 bg-slate-50">
+                    {toastMessage && (
+                        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg z-50 transition-opacity text-xs whitespace-nowrap">
+                            {toastMessage}
+                        </div>
+                    )}
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.11</span></div>
+                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.12</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full active:scale-90 transition-all"><Icon name="Settings" /></button>
                     </header>
 
@@ -674,7 +689,7 @@
 
                     <footer className="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
-                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.11)</span>
+                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.12)</span>
                     </footer>
 
                     {showSettings && (
@@ -711,12 +726,12 @@
                             </div>
                         </div>
                     )}
-                    <LogWindow logs={logs} onClear={() => setLogs([])} />
+                    <LogWindow logs={logs} onClear={() => setLogs([])} showToast={showToast} />
                 </div>
             );
         }
 
-        const LogWindow = ({ logs, onClear }) => {
+        const LogWindow = ({ logs, onClear, showToast }) => {
             const [min, setMin] = useState(true);
             const [size, setSize] = useState({ w: 320, h: 250 });
             const [pos, setPos] = useState({ x: 10, y: window.innerHeight - 50 });
@@ -771,6 +786,7 @@
                                     el.select(); 
                                     document.execCommand('copy'); 
                                     document.body.removeChild(el); 
+                                    if (showToast) showToast('ログをコピーしました');
                                 }}>
                                     <Icon name="Copy" size={12}/>
                                 </button>
