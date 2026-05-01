@@ -323,12 +323,29 @@
             } catch (e) { return null; }
         };
 
+        function getTimestampFilename(prefix = "file", ext = "txt") {
+            const now = new Date();
+
+            const yyyy = now.getFullYear();
+	    const mm = String(now.getMonth() + 1).padStart(2, '0');
+	    const dd = String(now.getDate()).padStart(2, '0');
+
+	    const hh = String(now.getHours()).padStart(2, '0');
+	    const mi = String(now.getMinutes()).padStart(2, '0');
+	    const ss = String(now.getSeconds()).padStart(2, '0');
+
+	    return `${prefix}_${yyyy}${mm}${dd}_${hh}${mi}${ss}.${ext}`;
+        }	 
+
         // --- Helper: フィードバック履歴保存 (追記) ---
         const saveFeedbackFile = async (newEntries, defaultName) => {
             if (!newEntries || !Array.isArray(newEntries) || newEntries.length === 0) {
                 alert("エラー: 保存するフィードバック履歴が空のため、保存を中止しました。");
                 return null;
             }
+
+            defaultName = getTimestampFilename("defaultName", "json");
+ 
             try {
                 if (window.showSaveFilePicker) {
                     const handle = await window.showSaveFilePicker({
