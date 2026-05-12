@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中国語 SRS学習 v1.14</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">\n    <meta name="color-scheme" content="light dark">
+    <title>中国語 SRS学習 v1.15</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -20,49 +20,213 @@
             margin: 0;
             padding: 0;
         }
+        /* ===== Dark mode: no white patches, readable text/forms/cards ===== */
         @media (prefers-color-scheme: dark) {
-            :root { color-scheme: dark; }
-            body {
-                background: #020617;
-                color: #e2e8f0;
+            :root {
+                color-scheme: dark;
+                --bg-main: #020617;
+                --bg-panel: #0f172a;
+                --bg-panel-soft: #111827;
+                --bg-panel-raised: #1e293b;
+                --bg-input: #020617;
+                --text-main: #e5e7eb;
+                --text-muted: #cbd5e1;
+                --text-soft: #94a3b8;
+                --border-main: #334155;
+                --indigo-soft: #1e1b4b;
+                --indigo-text: #c7d2fe;
+                --red-soft: #450a0a;
+                --red-text: #fecaca;
+                --green-soft: #052e16;
+                --green-text: #bbf7d0;
+                --emerald-soft: #022c22;
+                --emerald-text: #a7f3d0;
+                --amber-soft: #451a03;
+                --amber-text: #fde68a;
             }
-            body, button, input, textarea, select, #readableOutput, .segment, .logPanel, #logContent, #logHeader, #dictModal, #limitModal {
-                color: #e2e8f0;
+
+            html, body, #root {
+                background: var(--bg-main) !important;
+                color: var(--text-main) !important;
             }
-            textarea#rawInput, #readableOutput {
-                background: #0f172a;
-                color: #e2e8f0;
+
+            body { -webkit-font-smoothing: antialiased; }
+
+            .bg-white,
+            .bg-white\/90,
+            .bg-slate-50,
+            .bg-slate-100,
+            .bg-indigo-50,
+            .bg-indigo-100,
+            .bg-red-50,
+            .bg-emerald-50,
+            .bg-amber-50 {
+                background-color: var(--bg-panel) !important;
+                color: var(--text-main) !important;
             }
-            textarea#rawInput::placeholder {
-                color: #94a3b8;
+
+            .bg-slate-200 {
+                background-color: var(--bg-panel-raised) !important;
+                color: var(--text-main) !important;
+            }
+
+            .bg-slate-800 { background-color: #111827 !important; }
+            .bg-slate-900 { background-color: #020617 !important; }
+
+            .bg-indigo-50,
+            .bg-indigo-100 {
+                background-color: var(--indigo-soft) !important;
+                color: var(--indigo-text) !important;
+            }
+
+            .bg-red-50 {
+                background-color: var(--red-soft) !important;
+                color: var(--red-text) !important;
+            }
+
+            .bg-emerald-50 {
+                background-color: var(--emerald-soft) !important;
+                color: var(--emerald-text) !important;
+            }
+
+            .bg-amber-50 {
+                background-color: var(--amber-soft) !important;
+                color: var(--amber-text) !important;
+            }
+
+            .text-slate-900,
+            .text-slate-800,
+            .text-slate-700,
+            .text-slate-600,
+            .text-slate-500,
+            .text-slate-400,
+            .text-slate-300 {
+                color: var(--text-muted) !important;
+            }
+
+            .text-indigo-700,
+            .text-indigo-600 { color: var(--indigo-text) !important; }
+
+            .text-red-700,
+            .text-red-600,
+            .text-red-500,
+            .text-red-300 { color: var(--red-text) !important; }
+
+            .text-emerald-700,
+            .text-emerald-600,
+            .text-emerald-500,
+            .text-green-500 { color: var(--green-text) !important; }
+
+            .text-amber-700,
+            .text-amber-600,
+            .text-amber-500 { color: var(--amber-text) !important; }
+
+            .border,
+            .border-t,
+            .border-b,
+            .border-slate-100,
+            .border-slate-200,
+            .border-indigo-100,
+            .border-red-100,
+            .border-emerald-100,
+            .border-amber-100 {
+                border-color: var(--border-main) !important;
+            }
+
+            input,
+            textarea,
+            select {
+                background-color: var(--bg-input) !important;
+                color: var(--text-main) !important;
+                border-color: var(--border-main) !important;
+                caret-color: var(--indigo-text);
+            }
+
+            input::placeholder,
+            textarea::placeholder {
+                color: var(--text-soft) !important;
                 opacity: 1;
             }
-            .bg-white { background-color: #0f172a !important; }
-            .bg-slate-50 { background-color: #111827 !important; }
-            .bg-slate-100 { background-color: #111827 !important; }
-            .bg-slate-200 { background-color: #1e293b !important; }
-            .bg-indigo-50 { background-color: #312e81 !important; }
-            .bg-red-50 { background-color: #7f1d1d !important; }
-            .text-slate-700, .text-slate-500, .text-slate-400, .text-slate-300, .text-slate-800, .text-slate-600 {
-                color: #cbd5e1 !important;
+
+            input:focus,
+            textarea:focus,
+            select:focus {
+                border-color: #818cf8 !important;
+                box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25) !important;
+                outline: none !important;
             }
-            .text-indigo-600 { color: #a5b4fc !important; }
-            .text-red-500, .text-red-600, .text-red-300 { color: #fca5a5 !important; }
-            .border-slate-200 { border-color: #334155 !important; }
-            .border-slate-100 { border-color: #1e293b !important; }
-            .border { border-color: #334155 !important; }
-            .shadow-sm, .shadow-xl, .shadow-md, .shadow-2xl { box-shadow: 0 10px 30px rgba(0,0,0,0.35) !important; }
-            .highlight-active { background: #fde68a !important; color: #000 !important; }
-            #logPanel { background: rgba(15, 23, 42, 0.96); border-color: rgba(100, 116, 139, 0.3); }
-            #logHeader { background: #111827; }
-            #searchTrigger { background: #4f46e5; color: #fff; border-color: #fff; }
-            #settingsModal > div, #dictModal > div, #limitModal > div {
-                background: #0f172a;
-                border-color: #334155;
-                color: #e2e8f0;
+
+            input:-webkit-autofill,
+            textarea:-webkit-autofill,
+            select:-webkit-autofill {
+                -webkit-text-fill-color: var(--text-main) !important;
+                box-shadow: 0 0 0px 1000px var(--bg-input) inset !important;
+                transition: background-color 9999s ease-in-out 0s;
             }
-        }
-        
+
+            button.bg-slate-100,
+            button.bg-indigo-100,
+            label.bg-indigo-100,
+            label.bg-indigo-50 {
+                background-color: var(--bg-panel-raised) !important;
+                color: var(--text-main) !important;
+                border-color: var(--border-main) !important;
+            }
+
+            #settingsModal > div,
+            #dictModal > div,
+            #limitModal > div,
+            .fixed.inset-0 > .bg-white {
+                background-color: var(--bg-panel) !important;
+                color: var(--text-main) !important;
+                border: 1px solid var(--border-main) !important;
+            }
+
+            #logPanel,
+            .log-window {
+                background: rgba(2, 6, 23, 0.98) !important;
+                border-color: var(--border-main) !important;
+            }
+
+            #logHeader,
+            .log-window > div:first-child {
+                background: #0f172a !important;
+                color: var(--text-main) !important;
+            }
+
+            .log-content {
+                background: rgba(0, 0, 0, 0.35) !important;
+                color: #86efac !important;
+            }
+
+            .log-content::-webkit-scrollbar-track { background: #020617 !important; }
+            .log-content::-webkit-scrollbar-thumb { background: #475569 !important; }
+
+            .highlight-active,
+            .active {
+                background: #facc15 !important;
+                color: #111827 !important;
+            }
+
+            footer {
+                background: rgba(15, 23, 42, 0.92) !important;
+                color: var(--text-soft) !important;
+                border-color: var(--border-main) !important;
+            }
+
+            .shadow-sm,
+            .shadow-md,
+            .shadow-lg,
+            .shadow-xl,
+            .shadow-2xl {
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+            }
+
+            ::selection {
+                background: #818cf8;
+                color: #020617;
+            }
+        }        
         .log-window {
             touch-action: none;
             overscroll-behavior: contain;
@@ -475,7 +639,7 @@
             useEffect(() => {
                 const savedKey = localStorage.getItem('srs_gemini_key');
                 if (savedKey) setApiKey(savedKey);
-                addLog("システム: v1.14 起動。");
+                addLog("システム: v1.15 起動。");
             }, [addLog]);
 
             const callAIWithFallback = async (prompt, key, isJson = true) => {
@@ -661,7 +825,7 @@
                         </div>
                     )}
                     <header className="bg-indigo-800 text-white p-4 shadow-lg flex justify-between items-center sticky top-0 z-40">
-                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.14</span></div>
+                        <div className="flex items-center gap-2 font-bold text-sm md:text-base"><Icon name="BookOpen" /> <span>中国語 SRS v1.15</span></div>
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-indigo-700 rounded-full active:scale-90 transition-all"><Icon name="Settings" /></button>
                     </header>
 
@@ -749,7 +913,7 @@
 
                     <footer className="fixed bottom-0 w-full bg-white/90 backdrop-blur border-t p-2 text-[10px] text-slate-400 flex justify-center gap-4 z-30 font-mono">
                         <span className="flex items-center gap-1"><Icon name="FileJson" size={10}/> {storageName}</span>
-                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.14)</span>
+                        <span className="flex items-center gap-1"><Icon name="Cpu" size={10}/> Gemini (v1.15)</span>
                     </footer>
 
                     {showSettings && (
